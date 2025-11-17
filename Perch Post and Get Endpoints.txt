@@ -1,0 +1,731 @@
+Exercise
+Access exercises in Perch.
+
+
+
+GET
+/v3/exercises
+Get Exercises
+
+
+
+Get all Exercises for the requester's organization. Same effect as POST /v3/exercises with an empty body.
+
+Parameters
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Success.
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "id": 0,
+      "name": "string",
+      "org_id": 0,
+      "limbed": true,
+      "tracked": true
+    }
+  ]
+}
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+
+POST
+/v3/exercises
+Filter exercises
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Parameters on which to filter exercises. Without any filters, Exercises returned implicity include all those available to the requester.
+
+Example Value
+Schema
+{
+  "limit": 0,
+  "next_token": "string",
+  "id": 0,
+  "untracked": "INCLUDE",
+  "inactive": "INCLUDE"
+}
+Responses
+Code	Description	Links
+200	
+Success
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "id": 0,
+      "name": "string",
+      "org_id": 0,
+      "limbed": true,
+      "tracked": true
+    }
+  ]
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+Set
+Access sets tracked or recorded on Perch.
+
+
+
+POST
+/v3/sets
+Filter sets
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Filters on Sets. Requires at least one filter, multiple may be specified and will be combined to find matching records. If neither user_id nor group_id is specified, the default behavior or this endpoint is to return only Sets with the same user_id as the requester.
+
+Example Value
+Schema
+{
+  "limit": 0,
+  "next_token": "string",
+  "id": 0,
+  "user_id": 0,
+  "group_id": 0,
+  "exercise_id": 0,
+  "begin_time": 1561742528,
+  "end_time": 1561742528,
+  "untracked": "INCLUDE",
+  "include_reps": false
+}
+Responses
+Code	Description	Links
+200	
+Success, here are matching sets
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "id": 0,
+      "deleted": true,
+      "created_at": 1561742528,
+      "user_id": 0,
+      "org_id": 0,
+      "exercise_id": 0,
+      "weight": 0,
+      "pct_1rm": 0.25,
+      "tracked": true,
+      "bands_used": true,
+      "chains_used": true,
+      "start_time": 1561742528,
+      "end_time": 1561742528,
+      "error": {
+        "missed_reps": true,
+        "ghost_reps": true,
+        "wrong_values": true,
+        "ghost_rep_indices": [
+          0
+        ]
+      },
+      "reps": [
+        {
+          "limb": "RIGHT",
+          "concentric_mean_velocity_z": 28.71,
+          "eccentric_mean_velocity_z": -26.45,
+          "concentric_peak_velocity_z": 42.96,
+          "concentric_time_to_peak_velocity_z": 0,
+          "concentric_time_to_peak_power_z": 0,
+          "concentric_velocity_at_100_ms_z": 0,
+          "eccentric_peak_velocity_z": 3.31,
+          "concentric_peak_power_per_mass_z": 15160.17,
+          "concentric_disp_z": 22.5,
+          "eccentric_disp_z": 22.5
+        }
+      ],
+      "num_reps": 0,
+      "num_tracked_reps": 0,
+      "first_limb": "RIGHT",
+      "limb_pattern": "ALTERNATING",
+      "min_mean_power": 1409.24,
+      "avg_mean_power": 1409.24,
+      "max_mean_power": 1536.75,
+      "min_mean_velocity": 31.32,
+      "avg_mean_velocity": 31.32,
+      "max_mean_velocity": 34.15,
+      "avg_ecc_mean_velocity": 31.46,
+      "max_ecc_mean_velocity": 39.12,
+      "min_ecc_mean_velocity": 26.45,
+      "min_peak_power": 2458751.45,
+      "avg_peak_power": 2458751.45,
+      "max_peak_power": 2458751.45,
+      "min_peak_velocity": 49.48,
+      "avg_peak_velocity": 49.48,
+      "max_peak_velocity": 55.98,
+      "avg_ecc_peak_velocity": 48.3508597416838,
+      "max_ecc_peak_velocity": 56.4116308796593,
+      "min_ecc_peak_velocity": 41.24,
+      "avg_ecc_time": 758960.86,
+      "max_ecc_time": 850079.962962687,
+      "min_ecc_time": 603388.29,
+      "max_velocity_at_100_ms": 0,
+      "avg_velocity_at_100_ms": 0,
+      "min_velocity_at_100_ms": 0,
+      "max_time_to_peak_velocity": 0,
+      "avg_time_to_peak_velocity": 0,
+      "min_time_to_peak_velocity": 0,
+      "max_time_to_peak_power": 0,
+      "avg_time_to_peak_power": 0,
+      "min_time_to_peak_power": 0,
+      "avg_displacement": 22.5,
+      "min_displacement": 22.5,
+      "max_displacement": 22.5
+    }
+  ],
+  "refs": {
+    "exercises": [
+      {
+        "id": 0,
+        "name": "string",
+        "org_id": 0,
+        "limbed": true,
+        "tracked": true
+      }
+    ],
+    "users": [
+      {
+        "id": 0,
+        "active": true,
+        "email": "user@example.com",
+        "org_id": 0,
+        "created_at": 1551376897,
+        "first_name": "string",
+        "last_name": "string",
+        "name": "string",
+        "gender": "MALE",
+        "height": 72,
+        "weight": 185,
+        "img_url": "https://s3.amazonaws.com/bucket/image-file"
+      }
+    ]
+  }
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+Stat
+Access stats in Perch.
+
+
+
+GET
+/stats
+Get stats for the logged in user
+
+
+
+Parameters
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Success, here are all stats
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "user_id": 0,
+      "type": "ONE_RM",
+      "timestamp": 0,
+      "unit": "LBS",
+      "value": 0,
+      "exercise_id": 0
+    }
+  ]
+}
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+
+POST
+/stats
+Filter stats
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Parameters on which to filter stats.
+
+Example Value
+Schema
+{
+  "limit": 0,
+  "next_token": "string",
+  "user_id": 0,
+  "group_id": 0,
+  "exercise_id": 0,
+  "begin_time": 1561742528,
+  "end_time": 1561742528,
+  "type": "ONE_RM"
+}
+Responses
+Code	Description	Links
+200	
+Success, here are matching exercises
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "user_id": 0,
+      "type": "ONE_RM",
+      "timestamp": 0,
+      "unit": "LBS",
+      "value": 0,
+      "exercise_id": 0
+    }
+  ]
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+User
+Access users in Perch.
+
+
+
+GET
+/v2/user
+Get user
+
+
+
+Parameters
+No parameters
+
+Responses
+Code	Description	Links
+200	
+Success, here is your user.
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "data": {
+    "id": 0,
+    "active": true,
+    "email": "user@example.com",
+    "org_id": 0,
+    "created_at": 1551376897,
+    "first_name": "string",
+    "last_name": "string",
+    "name": "string",
+    "gender": "MALE",
+    "height": 72,
+    "weight": 185,
+    "img_url": "https://s3.amazonaws.com/bucket/image-file"
+  }
+}
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+
+POST
+/v2/users
+Filter users
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Filters on users. Requires at least one of id or group_id.
+
+Example Value
+Schema
+{
+  "limit": 0,
+  "next_token": "string",
+  "id": 0,
+  "group_id": 0
+}
+Responses
+Code	Description	Links
+200	
+Success, here are matching users.
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "truncated": true,
+  "next_token": "string",
+  "data": [
+    {
+      "id": 0,
+      "active": true,
+      "email": "user@example.com",
+      "org_id": 0,
+      "created_at": 1551376897,
+      "first_name": "string",
+      "last_name": "string",
+      "name": "string",
+      "gender": "MALE",
+      "height": 72,
+      "weight": 185,
+      "img_url": "https://s3.amazonaws.com/bucket/image-file"
+    }
+  ]
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+
+POST
+/users/create
+Create a user
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Create a new user
+
+Example Value
+Schema
+{
+  "data": {
+    "email": "user@example.com",
+    "first_name": "string",
+    "last_name": "string",
+    "gender": "MALE",
+    "height": 72,
+    "weight": 185
+  }
+}
+Responses
+Code	Description	Links
+200	
+Success, user created.
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "success": true,
+  "id": 0
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
+No links
+
+POST
+/v2/users/update
+Update a user
+
+
+
+Parameters
+No parameters
+
+Request body
+
+application/json
+Update a user. All fields are optional except id, this endpoint acts as a PATCH.
+
+Example Value
+Schema
+{
+  "data": {
+    "id": 0,
+    "active": true,
+    "first_name": "string",
+    "last_name": "string",
+    "gender": "MALE",
+    "height": 72,
+    "weight": 185
+  }
+}
+Responses
+Code	Description	Links
+200	
+Success, user updated.
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "success": true
+}
+No links
+400	
+Request is missing required parameters or includes invalid or unrecognized parameters.
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "string",
+  "info": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  }
+}
+No links
+404	
+Could not find an object you tried to retrive / filter.
+
+Media type
+No links
+429	
+Rate limit exceeded
+
+Media type
