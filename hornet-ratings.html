@@ -259,7 +259,7 @@
           <!-- Lower Body Strength -->
           <div class="rating-card">
             <div class="rating-header">
-              <span class="rating-icon">🦵</span>
+              <span class="rating-icon">🔨</span>
               <h3 class="rating-title">Lower Body Strength</h3>
             </div>
             <div class="rating-score" id="lowerStrengthScore">--</div>
@@ -285,7 +285,7 @@
           <!-- Upper Body Strength -->
           <div class="rating-card">
             <div class="rating-header">
-              <span class="rating-icon">💪</span>
+              <span class="rating-icon">🔨</span>
               <h3 class="rating-title">Upper Body Strength</h3>
             </div>
             <div class="rating-score" id="upperStrengthScore">--</div>
@@ -298,7 +298,7 @@
           <!-- Upper Body Power -->
           <div class="rating-card">
             <div class="rating-header">
-              <span class="rating-icon">🚀</span>
+              <span class="rating-icon">⚡</span>
               <h3 class="rating-title">Upper Body Power</h3>
             </div>
             <div class="rating-score" id="upperPowerScore">--</div>
@@ -306,6 +306,19 @@
               <div class="rating-fill" id="upperPowerBar" style="width: 0%"></div>
             </div>
             <div class="rating-details" id="upperPowerDetails">Based on best power from bench press</div>
+          </div>
+
+          <!-- Jump -->
+          <div class="rating-card">
+            <div class="rating-header">
+              <span class="rating-icon">🚀</span>
+              <h3 class="rating-title">Jump</h3>
+            </div>
+            <div class="rating-score" id="jumpScore">--</div>
+            <div class="rating-bar">
+              <div class="rating-fill" id="jumpBar" style="width: 0%"></div>
+            </div>
+            <div class="rating-details" id="jumpDetails">Based on max jump height</div>
           </div>
         </div>
       </div>
@@ -426,8 +439,10 @@
       'Back Squat': { body_segment: 'LOWER', movement_pattern: 'SQUAT' },
       'Front Squat': { body_segment: 'LOWER', movement_pattern: 'SQUAT' },
       'Trap Bar Deadlift': { body_segment: 'LOWER', movement_pattern: 'DEADLIFT' },
+      'Bar RDL': { body_segment: 'LOWER', movement_pattern: 'DEADLIFT' },
       'Trap Bar Jump': { body_segment: 'LOWER', movement_pattern: 'JUMP' },
-      'Bench Press': { body_segment: 'UPPER', movement_pattern: 'PRESS' }
+      'Bench Press': { body_segment: 'UPPER', movement_pattern: 'PRESS' },
+      'Vertical Jump': { body_segment: 'LOWER', movement_pattern: 'VERTICAL_JUMP' }
     };
 
     // Unit conversion constants
@@ -637,7 +652,7 @@
       }
     }
 
-    // Calculate best rep metrics per athlete
+    // Calculate best rep metrics per athlete per exercise
     function calculateAthleteMetrics(users, sets) {
       const athleteMetrics = {};
       
@@ -648,10 +663,16 @@
           name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || `User ${user.id}`,
           gender: user.gender ? user.gender.toLowerCase() : 'unknown',
           active: user.active,
-          lower_body_strength_metric: null, // Best weight from lower body exercises
-          lower_body_power_metric: null,    // Best power from lower body exercises
-          upper_body_strength_metric: null, // Best weight from bench press
-          upper_body_power_metric: null     // Best power from bench press
+          // Track best performance for each exercise individually
+          exercises: {
+            'Back Squat': { strength: null, power: null },
+            'Front Squat': { strength: null, power: null },
+            'Trap Bar Deadlift': { strength: null, power: null },
+            'Bar RDL': { strength: null, power: null },
+            'Trap Bar Jump': { strength: null, power: null },
+            'Bench Press': { strength: null, power: null },
+            'Vertical Jump': { jumpHeight: null }
+          }
         };
       });
       
@@ -663,50 +684,55 @@
         const exerciseConfig = EXERCISE_CONFIG[set.exercise_name];
         if (!exerciseConfig) return;
         
+        // Handle Vertical Jump separately (uses set-level max_jump_height)
+        if (exerciseConfig.movement_pattern === 'VERTICAL_JUMP') {
+          if (!athlete.exercises[set.exercise_name]) {
+            athlete.exercises[set.exercise_name] = { jumpHeight: null };
+          }
+          
+          const exercise = athlete.exercises[set.exercise_name];
+          if (set.max_jump_height && (!exercise.jumpHeight || set.max_jump_height > exercise.jumpHeight)) {
+            exercise.jumpHeight = set.max_jump_height;
+          }
+          return;
+        }
+        
         // Get only valid reps (excluding ghost reps)
         const validReps = getValidReps(set);
         if (validReps.length === 0) return;
+        
+        // Initialize exercise object if it doesn't exist
+        if (!athlete.exercises[set.exercise_name]) {
+          athlete.exercises[set.exercise_name] = { strength: null, power: null };
+        }
         
         // Process each valid rep in the set
         validReps.forEach(rep => {
           if (!set.weight || set.weight <= 0) return;
           
-          if (exerciseConfig.body_segment === 'LOWER') {
-            // Lower body strength - track best weight
-            if (!athlete.lower_body_strength_metric || set.weight > athlete.lower_body_strength_metric) {
-              athlete.lower_body_strength_metric = set.weight;
+          const exercise = athlete.exercises[set.exercise_name];
+          
+          // Track best weight (strength) for this exercise
+          if (!exercise.strength || set.weight > exercise.strength) {
+            exercise.strength = set.weight;
+          }
+          
+          // Track best power for this exercise
+          let power = null;
+          if (exerciseConfig.movement_pattern === 'JUMP') {
+            // Use peak power for jumps
+            if (rep.concentric_peak_power_per_mass_z) {
+              power = convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight);
             }
-            
-            // Lower body power - depends on movement pattern
-            let power = null;
-            if (exerciseConfig.movement_pattern === 'JUMP') {
-              // Use peak power for jumps
-              if (rep.concentric_peak_power_per_mass_z) {
-                power = convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight);
-              }
-            } else {
-              // Use mean power for other exercises
-              if (rep.concentric_mean_velocity_z) {
-                power = convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight);
-              }
-            }
-            
-            if (power && (!athlete.lower_body_power_metric || power > athlete.lower_body_power_metric)) {
-              athlete.lower_body_power_metric = power;
-            }
-          } else if (exerciseConfig.body_segment === 'UPPER') {
-            // Upper body strength - track best weight
-            if (!athlete.upper_body_strength_metric || set.weight > athlete.upper_body_strength_metric) {
-              athlete.upper_body_strength_metric = set.weight;
-            }
-            
-            // Upper body power - use mean power
+          } else {
+            // Use mean power for other exercises
             if (rep.concentric_mean_velocity_z) {
-              const power = convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight);
-              if (power && (!athlete.upper_body_power_metric || power > athlete.upper_body_power_metric)) {
-                athlete.upper_body_power_metric = power;
-              }
+              power = convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight);
             }
+          }
+          
+          if (power && (!exercise.power || power > exercise.power)) {
+            exercise.power = power;
           }
         });
       });
@@ -716,60 +742,136 @@
 
     // Calculate ratings for all athletes
     function calculateRatings(athleteMetrics) {
-      const ratings = {};
       const genders = ['male', 'female'];
-      const metrics = [
-        'lower_body_strength_metric',
-        'lower_body_power_metric', 
-        'upper_body_strength_metric',
-        'upper_body_power_metric'
-      ];
+      const exercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump', 'Bench Press'];
+      const metrics = ['strength', 'power'];
       
+      // Store rating scales for each gender/exercise/metric combination
+      const ratingScales = {};
+      
+      // Calculate min/max/step for each exercise/metric within each gender
       genders.forEach(gender => {
-        ratings[gender] = {};
+        ratingScales[gender] = {};
         const genderAthletes = athleteMetrics.filter(a => a.gender === gender);
         
-        metrics.forEach(metric => {
-          const validAthletes = genderAthletes.filter(a => a[metric] !== null);
-          if (validAthletes.length === 0) return;
+        exercises.forEach(exercise => {
+          ratingScales[gender][exercise] = {};
           
-          const values = validAthletes.map(a => a[metric]);
-          const minValue = Math.min(...values);
-          const maxValue = Math.max(...values);
-          const range = maxValue - minValue;
-          const step = range > 0 ? range / 50 : 1; // 49-99 = 50 points
-          
-          ratings[gender][metric] = { minValue, maxValue, step };
+          metrics.forEach(metric => {
+            // Get all valid values for this exercise/metric
+            const values = genderAthletes
+              .map(a => a.exercises[exercise]?.[metric])
+              .filter(v => v !== null && v !== undefined);
+            
+            if (values.length === 0) {
+              ratingScales[gender][exercise][metric] = null;
+              return;
+            }
+            
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const range = maxValue - minValue;
+            const step = range > 0 ? range / 50 : 1; // 49-99 = 50 points
+            
+            ratingScales[gender][exercise][metric] = { minValue, maxValue, step };
+          });
         });
+        
+        // Add Vertical Jump rating scale
+        ratingScales[gender]['Vertical Jump'] = {};
+        const jumpHeights = genderAthletes
+          .map(a => a.exercises['Vertical Jump']?.jumpHeight)
+          .filter(v => v !== null && v !== undefined);
+        
+        if (jumpHeights.length > 0) {
+          const minValue = Math.min(...jumpHeights);
+          const maxValue = Math.max(...jumpHeights);
+          const range = maxValue - minValue;
+          const step = range > 0 ? range / 50 : 1;
+          ratingScales[gender]['Vertical Jump']['jumpHeight'] = { minValue, maxValue, step };
+        } else {
+          ratingScales[gender]['Vertical Jump']['jumpHeight'] = null;
+        }
       });
       
-      // Calculate individual ratings
+      // Calculate individual ratings for each athlete
       const ratedAthletes = athleteMetrics.map(athlete => {
-        const ratingKey = athlete.gender;
         const result = { ...athlete };
+        const gender = athlete.gender;
         
-        metrics.forEach(metric => {
-          const ratingName = metric.replace('_metric', '_rating');
+        // Store individual exercise ratings
+        result.exerciseRatings = {};
+        
+        exercises.forEach(exercise => {
+          result.exerciseRatings[exercise] = {};
           
-          if (athlete[metric] !== null && ratings[ratingKey] && ratings[ratingKey][metric]) {
-            const { minValue, step } = ratings[ratingKey][metric];
-            const rawRating = 49 + ((athlete[metric] - minValue) / step);
-            result[ratingName] = Math.max(49, Math.min(99, Math.round(rawRating)));
-          } else {
-            result[ratingName] = 49; // Default rating for missing data
-          }
+          metrics.forEach(metric => {
+            const value = athlete.exercises[exercise]?.[metric];
+            const scale = ratingScales[gender]?.[exercise]?.[metric];
+            
+            if (value !== null && value !== undefined && scale) {
+              const { minValue, step } = scale;
+              const rawRating = 49 + ((value - minValue) / step);
+              result.exerciseRatings[exercise][metric] = Math.max(49, Math.min(99, Math.round(rawRating)));
+            } else {
+              result.exerciseRatings[exercise][metric] = null;
+            }
+          });
         });
         
-        // Calculate overall rating (average of all ratings)
-        const ratingValues = [
+        // Add Vertical Jump rating
+        result.exerciseRatings['Vertical Jump'] = {};
+        const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
+        const jumpScale = ratingScales[gender]?.['Vertical Jump']?.['jumpHeight'];
+        
+        if (jumpHeight !== null && jumpHeight !== undefined && jumpScale) {
+          const { minValue, step } = jumpScale;
+          const rawRating = 49 + ((jumpHeight - minValue) / step);
+          result.exerciseRatings['Vertical Jump']['jumpHeight'] = Math.max(49, Math.min(99, Math.round(rawRating)));
+        } else {
+          result.exerciseRatings['Vertical Jump']['jumpHeight'] = null;
+        }
+        
+        // Calculate category ratings by averaging exercise ratings
+        const lowerBodyExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
+        const upperBodyExercises = ['Bench Press'];
+        
+        // Lower Body Strength = average of Back Squat, Front Squat, Trap Bar Deadlift, Bar RDL strength ratings
+        const lowerStrengthRatings = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL']
+          .map(ex => result.exerciseRatings[ex]?.strength)
+          .filter(r => r !== null && r !== undefined);
+        result.lower_body_strength_rating = lowerStrengthRatings.length > 0
+          ? Math.round(lowerStrengthRatings.reduce((sum, r) => sum + r, 0) / lowerStrengthRatings.length)
+          : 49;
+        
+        // Lower Body Power = average of all lower body exercises' power ratings
+        const lowerPowerRatings = lowerBodyExercises
+          .map(ex => result.exerciseRatings[ex]?.power)
+          .filter(r => r !== null && r !== undefined);
+        result.lower_body_power_rating = lowerPowerRatings.length > 0
+          ? Math.round(lowerPowerRatings.reduce((sum, r) => sum + r, 0) / lowerPowerRatings.length)
+          : 49;
+        
+        // Upper Body Strength = Bench Press strength rating
+        result.upper_body_strength_rating = result.exerciseRatings['Bench Press']?.strength || 49;
+        
+        // Upper Body Power = Bench Press power rating
+        result.upper_body_power_rating = result.exerciseRatings['Bench Press']?.power || 49;
+        
+        // Jump rating
+        result.jump_rating = result.exerciseRatings['Vertical Jump']?.jumpHeight || 49;
+        
+        // Calculate overall rating (average of all 5 category ratings)
+        const categoryRatings = [
           result.lower_body_strength_rating,
           result.lower_body_power_rating,
           result.upper_body_strength_rating,
-          result.upper_body_power_rating
-        ].filter(r => r !== null && r !== undefined);
+          result.upper_body_power_rating,
+          result.jump_rating
+        ].filter(r => r !== null && r !== undefined && r !== 49);
         
-        result.overall_rating = ratingValues.length > 0 
-          ? Math.round(ratingValues.reduce((sum, r) => sum + r, 0) / ratingValues.length)
+        result.overall_rating = categoryRatings.length > 0 
+          ? Math.round(categoryRatings.reduce((sum, r) => sum + r, 0) / categoryRatings.length)
           : 49;
         
         return result;
@@ -837,20 +939,61 @@
       // Update overall rating
       document.getElementById('overallScore').textContent = athlete.overall_rating;
       
-      // Update individual ratings
-      updateRatingCard('lowerStrength', athlete.lower_body_strength_metric ? athlete.lower_body_strength_rating : 'N/A', athlete.lower_body_strength_metric ? '' : 'No reps attempted');
-      updateRatingCard('lowerPower', athlete.lower_body_power_metric ? athlete.lower_body_power_rating : 'N/A', athlete.lower_body_power_metric ? '' : 'No reps attempted');
-      updateRatingCard('upperStrength', athlete.upper_body_strength_metric ? athlete.upper_body_strength_rating : 'N/A', athlete.upper_body_strength_metric ? '' : 'No reps attempted');
-      updateRatingCard('upperPower', athlete.upper_body_power_metric ? athlete.upper_body_power_rating : 'N/A', athlete.upper_body_power_metric ? '' : 'No reps attempted');
+      // Build details showing which exercises contributed to each rating
+      const lowerStrengthExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
+      const lowerPowerExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
+      const upperStrengthExercises = ['Bench Press'];
+      const upperPowerExercises = ['Bench Press'];
+      
+      // Helper function to build details string
+      const buildDetails = (exercises, metric) => {
+        const ratings = exercises
+          .map(ex => {
+            const rating = athlete.exerciseRatings[ex]?.[metric];
+            return rating ? `${ex}: ${rating}` : null;
+          })
+          .filter(r => r !== null);
+        
+        if (ratings.length === 0) return 'No reps attempted';
+        return ratings.join(', ');
+      };
+      
+      // Update individual ratings with exercise details
+      updateRatingCard('lowerStrength', 
+        athlete.lower_body_strength_rating !== 49 ? athlete.lower_body_strength_rating : 'N/A', 
+        buildDetails(lowerStrengthExercises, 'strength'));
+      
+      updateRatingCard('lowerPower', 
+        athlete.lower_body_power_rating !== 49 ? athlete.lower_body_power_rating : 'N/A', 
+        buildDetails(lowerPowerExercises, 'power'));
+      
+      updateRatingCard('upperStrength', 
+        athlete.upper_body_strength_rating !== 49 ? athlete.upper_body_strength_rating : 'N/A', 
+        buildDetails(upperStrengthExercises, 'strength'));
+      
+      updateRatingCard('upperPower', 
+        athlete.upper_body_power_rating !== 49 ? athlete.upper_body_power_rating : 'N/A', 
+        buildDetails(upperPowerExercises, 'power'));
+      
+      // Update jump rating
+      const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
+      const jumpDetail = jumpHeight ? `Max height: ${jumpHeight.toFixed(1)} in` : 'No jumps attempted';
+      updateRatingCard('jump', 
+        athlete.jump_rating !== 49 ? athlete.jump_rating : 'N/A', 
+        jumpDetail);
     }
 
     function updateRatingCard(prefix, rating, details) {
       document.getElementById(`${prefix}Score`).textContent = rating;
       document.getElementById(`${prefix}Details`).textContent = details;
       
-      // Update progress bar
-      const percentage = ((rating - 49) / 50) * 100; // Convert 49-99 to 0-100%
-      document.getElementById(`${prefix}Bar`).style.width = `${percentage}%`;
+      // Update progress bar (handle both numeric ratings and 'N/A')
+      if (rating === 'N/A' || rating === 49) {
+        document.getElementById(`${prefix}Bar`).style.width = '0%';
+      } else {
+        const percentage = ((rating - 49) / 50) * 100; // Convert 49-99 to 0-100%
+        document.getElementById(`${prefix}Bar`).style.width = `${percentage}%`;
+      }
     }
 
     function showError(message) {
