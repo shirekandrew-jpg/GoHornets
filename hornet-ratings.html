@@ -194,6 +194,65 @@
       color: var(--hornet-gold);
     }
 
+    /* Loading progress bar */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      gap: 2rem;
+    }
+
+    .loading-container.hidden {
+      display: none;
+    }
+
+    .loading-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--hornet-green);
+      text-align: center;
+    }
+
+    .loading-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar-container {
+      width: 80%;
+      max-width: 500px;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--hornet-green) 0%, var(--hornet-gold) 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .loading-percentage {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--hornet-green);
+      margin-top: 1rem;
+    }
+
     /* Responsive design */
     @media (max-width: 768px) {
       .ratings-container {
@@ -218,12 +277,25 @@
 </head>
 
 <body>
+  <!-- Loading Progress Bar -->
+  <div id="loadingContainer" class="loading-container">
+    <div class="loading-title">🐝 Calculating Hornet Ratings</div>
+    <div class="loading-subtitle" id="loadingMessage">Initializing...</div>
+    <div class="progress-bar-container">
+      <div id="progressBarFill" class="progress-bar-fill"></div>
+    </div>
+    <div class="loading-percentage" id="loadingPercentage">0%</div>
+  </div>
+
   <main class="main-content">
-    <div class="ratings-container">
-      <!-- Top Controls -->
+    <!-- Top Controls -->
+    <div class="top-controls">
       <button class="back-button" onclick="navigateWithHornets('index.html')">
         ← Back to Home
       </button>
+    </div>
+
+    <div class="ratings-container">
 
       <!-- Gender Selection -->
       <div class="gender-selector">
@@ -1002,10 +1074,63 @@
       document.getElementById('errorState').style.display = 'block';
     }
 
+    function updateProgress(percent, message) {
+      document.getElementById('progressBarFill').style.width = `${percent}%`;
+      document.getElementById('loadingPercentage').textContent = `${Math.round(percent)}%`;
+      document.getElementById('loadingMessage').textContent = message;
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingContainer').classList.add('hidden');
+    }
+
+    let progressInterval = null;
+
+    function updateProgress(percent, message) {
+      document.getElementById('progressBarFill').style.width = `${percent}%`;
+      document.getElementById('loadingPercentage').textContent = `${Math.round(percent)}%`;
+      document.getElementById('loadingMessage').textContent = message;
+    }
+
+    function startContinuousProgress(duration, message) {
+      return new Promise(resolve => {
+        let startTime = Date.now();
+        let currentPercent = 0;
+        
+        updateProgress(0, message);
+        
+        progressInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          currentPercent = Math.min(99, (elapsed / duration) * 100);
+          updateProgress(currentPercent, message);
+          
+          if (currentPercent >= 99) {
+            clearInterval(progressInterval);
+            resolve();
+          }
+        }, 50);
+      });
+    }
+
+    function stopProgressAndComplete(message) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      updateProgress(100, message);
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingContainer').classList.add('hidden');
+    }
+
     // Initialize the page
     async function initializePage() {
       try {
         console.log('Initializing Hornet Ratings page...');
+        
+        // Start continuous 30-second progress animation
+        const progressPromise = startContinuousProgress(30000, 'Calculating ratings...');
         
         // Load all data
         console.log('Loading users...');
@@ -1025,14 +1150,21 @@
         
         console.log(`Calculated ratings for ${allRatings.length} athletes`);
         
+        // Data is ready - jump to 100%
+        stopProgressAndComplete('Ratings ready!');
+        
         // Hide loading state
         document.getElementById('loadingState').style.display = 'none';
         
         // Update UI
         updateAthleteDropdown();
         
+        await new Promise(resolve => setTimeout(resolve, 500));
+        hideLoading();
+        
       } catch (error) {
         console.error('Error initializing page:', error);
+        stopProgressAndComplete('Error loading data. Please refresh.');
         showError('Failed to load rating data. Please try again.');
       }
     }

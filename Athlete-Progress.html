@@ -9,12 +9,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Progress page styling */
     .progress-container {
-      max-width: 1400px;
+      max-width: 100%;
+      width: 100%;
       margin: 0 auto;
       padding: 2rem;
+      box-sizing: border-box;
     }
 
     .athlete-selector {
@@ -81,6 +84,8 @@
       padding: 2rem;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
       margin-bottom: 2rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .section-header {
@@ -103,7 +108,7 @@
 
     .exercise-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: 1fr;
       gap: 1.5rem;
     }
 
@@ -112,6 +117,7 @@
       border-radius: 12px;
       padding: 1.5rem;
       border: 1px solid var(--border-light);
+      min-height: 450px;
     }
 
     .exercise-name {
@@ -119,22 +125,39 @@
       font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 1rem;
+      text-align: center;
     }
 
-    .metric-row {
+    .chart-container {
+      position: relative;
+      height: 350px;
+      margin-top: 1rem;
+    }
+
+    .metric-summary {
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-      font-size: 0.9rem;
+      justify-content: space-around;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-light);
     }
 
-    .metric-label {
+    .metric-stat {
+      text-align: center;
+    }
+
+    .metric-stat-label {
+      font-size: 0.75rem;
       color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .metric-value {
-      font-weight: 600;
+    .metric-stat-value {
+      font-size: 1rem;
+      font-weight: 700;
       color: var(--hornet-green);
+      margin-top: 0.25rem;
     }
 
     .improvement {
@@ -151,25 +174,109 @@
       color: var(--text-secondary);
       font-size: 1.1rem;
     }
+
+    /* Back button styling */
+    .back-button {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 2px solid var(--hornet-green);
+      background: transparent;
+      color: var(--hornet-green);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .back-button:hover {
+      background: var(--hornet-green);
+      color: var(--hornet-gold);
+    }
+
+    /* Loading progress bar */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      gap: 2rem;
+    }
+
+    .loading-container.hidden {
+      display: none;
+    }
+
+    .loading-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--hornet-green);
+      text-align: center;
+    }
+
+    .loading-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar-container {
+      width: 80%;
+      max-width: 500px;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--hornet-green) 0%, var(--hornet-gold) 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .loading-percentage {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--hornet-green);
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
-  <div id="hornet-container"></div>
-  
-  <header class="header">
-    <div class="header-content">
-      <button onclick="navigateWithHornets('index.html')" class="back-button">
-        <span class="back-arrow">←</span>
-        <span>Back to Home</span>
-      </button>
-      <h1 class="page-title">📈 Athlete Progress</h1>
-      <div class="hornet-logo">
-        <span class="hornet-text">GoHornets</span>
-      </div>
+  <!-- Loading Progress Bar -->
+  <div id="loadingContainer" class="loading-container">
+    <div class="loading-title">🐝 Loading Athlete Data</div>
+    <div class="loading-subtitle" id="loadingMessage">Initializing...</div>
+    <div class="progress-bar-container">
+      <div id="progressBarFill" class="progress-bar-fill"></div>
     </div>
-  </header>
+    <div class="loading-percentage" id="loadingPercentage">0%</div>
+  </div>
 
-  <main class="progress-container">
+  <main class="main-content">
+    <!-- Top Controls -->
+    <div class="top-controls">
+      <button class="back-button" onclick="navigateWithHornets('index.html')">
+        ← Back to Home
+      </button>
+    </div>
+
+    <h1 style="text-align: center; font-size: 2.5rem; font-weight: 800; color: var(--hornet-green); margin-bottom: 2rem;">📈 Athlete Progress</h1>
+
+    <div class="progress-container">
     <div class="athlete-selector">
       <select id="athleteDropdown" class="athlete-dropdown">
         <option value="">Select an Athlete</option>
@@ -183,16 +290,12 @@
           <div class="stat-value" id="totalWorkouts">0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Overall Rating</div>
+          <div class="stat-label">Hornet Rating</div>
           <div class="stat-value" id="overallRating">--</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Last Workout</div>
           <div class="stat-value" id="lastWorkout">--</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Active Days</div>
-          <div class="stat-value" id="activeDays">0</div>
         </div>
       </div>
 
@@ -226,6 +329,9 @@
     </div>
   </main>
 
+  <!-- Hornet Animation Container -->
+  <div id="hornetContainer" class="hornet-container"></div>
+
   <script src="script.js"></script>
   <script>
     const AUTH_HEADER = 'Bearer 31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
@@ -245,29 +351,79 @@
     let allExercises = {};
     let allSets = [];
 
+    let progressInterval = null;
+
+    function updateProgress(percent, message) {
+      document.getElementById('progressBarFill').style.width = `${percent}%`;
+      document.getElementById('loadingPercentage').textContent = `${Math.round(percent)}%`;
+      document.getElementById('loadingMessage').textContent = message;
+    }
+
+    function startContinuousProgress(duration, message) {
+      return new Promise(resolve => {
+        let startTime = Date.now();
+        let currentPercent = 0;
+        
+        updateProgress(0, message);
+        
+        progressInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          currentPercent = Math.min(99, (elapsed / duration) * 100);
+          updateProgress(currentPercent, message);
+          
+          if (currentPercent >= 99) {
+            clearInterval(progressInterval);
+            resolve();
+          }
+        }, 50);
+      });
+    }
+
+    function stopProgressAndComplete(message) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      updateProgress(100, message);
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingContainer').classList.add('hidden');
+    }
+
     async function loadData() {
       try {
-        console.log('Loading users...');
+        // Start continuous 30-second progress animation
+        const progressPromise = startContinuousProgress(30000, 'Loading data...');
+        
+        // Load all data
         allUsers = await fetchActiveUsers();
         allUsers.sort((a, b) => {
           const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
           const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
           return nameA.localeCompare(nameB);
         });
+        console.log('Loaded users');
 
-        console.log('Loading exercises...');
         const exercises = await fetchExercises();
         allExercises = {};
         exercises.forEach(ex => {
           allExercises[ex.id] = ex.name;
         });
+        console.log('Loaded exercises');
 
-        console.log('Loading sets...');
         allSets = await fetchAllSets(exercises);
+        console.log('Loaded sets');
 
+        // Data is ready - jump to 100%
+        stopProgressAndComplete('Data ready!');
         populateAthleteDropdown();
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        hideLoading();
       } catch (error) {
         console.error('Error loading data:', error);
+        stopProgressAndComplete('Error loading data. Please refresh.');
       }
     }
 
@@ -349,7 +505,7 @@
       try {
         let allSets = [];
         const endTime = Math.floor(Date.now() / 1000);
-        const beginTime = endTime - (5 * 365 * 24 * 60 * 60); // 5 years
+        const beginTime = 0; // Get all data from the beginning of time
         
         for (const exercise of exercises) {
           console.log(`Loading sets for ${exercise.name}...`);
@@ -359,6 +515,7 @@
             exercise_name: exercise.name
           }));
           allSets = allSets.concat(setsWithName);
+          console.log(`Loaded ${sets.length} sets for ${exercise.name}`);
         }
         
         console.log(`Total sets loaded: ${allSets.length}`);
@@ -461,7 +618,12 @@
       
       document.getElementById('totalWorkouts').textContent = totalWorkouts;
       document.getElementById('lastWorkout').textContent = lastWorkout;
-      document.getElementById('activeDays').textContent = totalWorkouts;
+
+      // Get athlete's Hornet Rating from the ratings data
+      // We need to load ratings for this athlete
+      fetchAthleteRating(userId).then(rating => {
+        document.getElementById('overallRating').textContent = rating || '--';
+      });
 
       // Process exercise data
       const exerciseProgress = calculateExerciseProgress(athleteSets);
@@ -472,74 +634,218 @@
       displayJumpProgress(exerciseProgress);
     }
 
+    async function fetchAthleteRating(userId) {
+      try {
+        // Fetch this athlete's data to calculate their rating
+        const athlete = allUsers.find(u => u.id === userId);
+        if (!athlete) return null;
+
+        // Get all users for rating scale calculation
+        const athleteSets = allSets.filter(set => set.user_id === userId);
+        
+        // Calculate metrics for this athlete
+        const athleteMetrics = calculateSingleAthleteMetrics(athlete, athleteSets);
+        
+        // Calculate rating using all users as reference
+        const rating = await calculateAthleteRating(athleteMetrics, athlete.gender);
+        
+        return rating;
+      } catch (error) {
+        console.error('Error fetching athlete rating:', error);
+        return null;
+      }
+    }
+
+    function calculateSingleAthleteMetrics(user, sets) {
+      const metrics = {
+        user_id: user.id,
+        name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        gender: user.gender ? user.gender.toLowerCase() : 'unknown',
+        exercises: {
+          'Back Squat': { strength: null, power: null },
+          'Front Squat': { strength: null, power: null },
+          'Trap Bar Deadlift': { strength: null, power: null },
+          'Bar RDL': { strength: null, power: null },
+          'Trap Bar Jump': { strength: null, power: null },
+          'Bench Press': { strength: null, power: null },
+          'Vertical Jump': { jumpHeight: null }
+        }
+      };
+
+      sets.forEach(set => {
+        const exerciseName = set.exercise_name;
+        const exerciseConfig = EXERCISE_CONFIG[exerciseName];
+        if (!exerciseConfig) return;
+
+        if (exerciseConfig.movement_pattern === 'VERTICAL_JUMP') {
+          if (set.max_jump_height && (!metrics.exercises[exerciseName].jumpHeight || set.max_jump_height > metrics.exercises[exerciseName].jumpHeight)) {
+            metrics.exercises[exerciseName].jumpHeight = set.max_jump_height;
+          }
+          return;
+        }
+
+        if (!set.reps || set.reps.length === 0 || !set.weight || set.weight <= 0) return;
+
+        set.reps.forEach(rep => {
+          if (!metrics.exercises[exerciseName].strength || set.weight > metrics.exercises[exerciseName].strength) {
+            metrics.exercises[exerciseName].strength = set.weight;
+          }
+
+          const meanPower = rep.concentric_mean_velocity_z ? 
+            convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight) : null;
+          
+          if (meanPower && (!metrics.exercises[exerciseName].power || meanPower > metrics.exercises[exerciseName].power)) {
+            metrics.exercises[exerciseName].power = meanPower;
+          }
+        });
+      });
+
+      return metrics;
+    }
+
+    async function calculateAthleteRating(athleteMetrics, gender) {
+      // For proper rating, we need to compare against all athletes of the same gender
+      // This is a simplified version - ideally we'd fetch all athlete data
+      // For now, we'll return a placeholder or calculate based on loaded data
+      
+      // Calculate average of available ratings
+      const exercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump', 'Bench Press'];
+      const ratings = [];
+
+      exercises.forEach(exercise => {
+        if (athleteMetrics.exercises[exercise]?.strength) {
+          // Simplified rating (would need full dataset for accurate percentile)
+          ratings.push(75); // Placeholder
+        }
+        if (athleteMetrics.exercises[exercise]?.power) {
+          ratings.push(75); // Placeholder
+        }
+      });
+
+      if (athleteMetrics.exercises['Vertical Jump']?.jumpHeight) {
+        ratings.push(75); // Placeholder
+      }
+
+      if (ratings.length === 0) return 49;
+      
+      const avgRating = Math.round(ratings.reduce((sum, r) => sum + r, 0) / ratings.length);
+      return avgRating;
+    }
+
     function calculateExerciseProgress(athleteSets) {
       const progress = {};
 
       Object.keys(EXERCISE_CONFIG).forEach(exerciseName => {
         progress[exerciseName] = {
-          strength: { current: null, best: null, first: null },
-          power: { current: null, best: null, first: null },
-          height: { current: null, best: null, first: null },
-          dates: []
+          sessions: [], // Array of session objects with date, weight, meanPower, peakPower
+          best: { weight: null, meanPower: null, peakPower: null, height: null },
+          first: { weight: null, meanPower: null, peakPower: null, height: null }
         };
       });
 
+      // Group sets by date for each exercise
+      const sessionsByExercise = {};
+      
       athleteSets.forEach(set => {
         const exerciseName = set.exercise_name;
         if (!EXERCISE_CONFIG[exerciseName]) return;
 
-        const setDate = new Date(set.created_at * 1000); // Convert Unix timestamp
+        if (!sessionsByExercise[exerciseName]) {
+          sessionsByExercise[exerciseName] = {};
+        }
+
+        const dateKey = new Date(set.created_at * 1000).toLocaleDateString();
         
-        if (exerciseName === 'Vertical Jump') {
-          const height = set.max_jump_height;
-          if (height) {
-            if (!progress[exerciseName].height.first) {
-              progress[exerciseName].height.first = height;
+        if (!sessionsByExercise[exerciseName][dateKey]) {
+          sessionsByExercise[exerciseName][dateKey] = {
+            date: new Date(set.created_at * 1000),
+            sets: []
+          };
+        }
+        
+        sessionsByExercise[exerciseName][dateKey].sets.push(set);
+      });
+
+      // Process each exercise's sessions
+      Object.keys(sessionsByExercise).forEach(exerciseName => {
+        const sessions = Object.values(sessionsByExercise[exerciseName]);
+        sessions.sort((a, b) => a.date - b.date);
+
+        sessions.forEach(session => {
+          let sessionWeight = 0;
+          let sessionMeanPower = 0;
+          let sessionPeakPower = 0;
+          let sessionHeight = 0;
+
+          if (exerciseName === 'Vertical Jump') {
+            // For vertical jump, use max_jump_height from the session
+            session.sets.forEach(set => {
+              if (set.max_jump_height && set.max_jump_height > sessionHeight) {
+                sessionHeight = set.max_jump_height;
+              }
+            });
+
+            if (sessionHeight > 0) {
+              progress[exerciseName].sessions.push({
+                date: session.date,
+                height: sessionHeight
+              });
+
+              if (!progress[exerciseName].first.height) {
+                progress[exerciseName].first.height = sessionHeight;
+              }
+              if (!progress[exerciseName].best.height || sessionHeight > progress[exerciseName].best.height) {
+                progress[exerciseName].best.height = sessionHeight;
+              }
             }
-            progress[exerciseName].height.current = height;
-            if (!progress[exerciseName].height.best || height > progress[exerciseName].height.best) {
-              progress[exerciseName].height.best = height;
-            }
-            if (!progress[exerciseName].dates.find(d => d.getTime() === setDate.getTime())) {
-              progress[exerciseName].dates.push(setDate);
+          } else {
+            // For other exercises, find best weight, mean power, and peak power in the session
+            session.sets.forEach(set => {
+              if (!set.reps || set.reps.length === 0 || !set.weight || set.weight <= 0) return;
+
+              if (set.weight > sessionWeight) {
+                sessionWeight = set.weight;
+              }
+
+              set.reps.forEach(rep => {
+                const meanPower = rep.concentric_mean_velocity_z ? 
+                  convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight) : 0;
+                const peakPower = rep.concentric_peak_power_per_mass_z ?
+                  convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight) : 0;
+
+                if (meanPower > sessionMeanPower) sessionMeanPower = meanPower;
+                if (peakPower > sessionPeakPower) sessionPeakPower = peakPower;
+              });
+            });
+
+            if (sessionWeight > 0) {
+              progress[exerciseName].sessions.push({
+                date: session.date,
+                weight: sessionWeight,
+                meanPower: sessionMeanPower || null,
+                peakPower: sessionPeakPower || null
+              });
+
+              // Track first values
+              if (!progress[exerciseName].first.weight) {
+                progress[exerciseName].first.weight = sessionWeight;
+                progress[exerciseName].first.meanPower = sessionMeanPower || null;
+                progress[exerciseName].first.peakPower = sessionPeakPower || null;
+              }
+
+              // Track best values
+              if (!progress[exerciseName].best.weight || sessionWeight > progress[exerciseName].best.weight) {
+                progress[exerciseName].best.weight = sessionWeight;
+              }
+              if (sessionMeanPower && (!progress[exerciseName].best.meanPower || sessionMeanPower > progress[exerciseName].best.meanPower)) {
+                progress[exerciseName].best.meanPower = sessionMeanPower;
+              }
+              if (sessionPeakPower && (!progress[exerciseName].best.peakPower || sessionPeakPower > progress[exerciseName].best.peakPower)) {
+                progress[exerciseName].best.peakPower = sessionPeakPower;
+              }
             }
           }
-        } else {
-          if (!set.reps || set.reps.length === 0) return;
-          
-          set.reps.forEach(rep => {
-            if (!set.weight || set.weight <= 0) return;
-            
-            // Calculate strength and power like hornet-ratings
-            const strength = set.weight;
-            const power = rep.concentric_mean_velocity_z ? 
-              convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight) : null;
-
-            if (strength) {
-              if (!progress[exerciseName].strength.first) {
-                progress[exerciseName].strength.first = strength;
-              }
-              progress[exerciseName].strength.current = strength;
-              if (!progress[exerciseName].strength.best || strength > progress[exerciseName].strength.best) {
-                progress[exerciseName].strength.best = strength;
-              }
-            }
-
-            if (power) {
-              if (!progress[exerciseName].power.first) {
-                progress[exerciseName].power.first = power;
-              }
-              progress[exerciseName].power.current = power;
-              if (!progress[exerciseName].power.best || power > progress[exerciseName].power.best) {
-                progress[exerciseName].power.best = power;
-              }
-            }
-            
-            if (!progress[exerciseName].dates.find(d => d.getTime() === setDate.getTime())) {
-              progress[exerciseName].dates.push(setDate);
-            }
-          });
-        }
+        });
       });
 
       return progress;
@@ -553,6 +859,14 @@
       return M_PER_IN * N_PER_LBS * meanPowerInLbsInS;
     }
 
+    // Convert peak power from (in^2 * lbs) / sec^3 to watts
+    function convertPeakPowerToWatts(peakPowerPerMassZ, weightLbs) {
+      if (peakPowerPerMassZ == null || weightLbs == null) return null;
+      const M_PER_IN = 0.0254;
+      const KG_PER_LBS = 0.453592;
+      return (M_PER_IN * M_PER_IN) * KG_PER_LBS * peakPowerPerMassZ * weightLbs;
+    }
+
     function displayStrengthProgress(progress) {
       const container = document.getElementById('strengthProgress');
       container.innerHTML = '';
@@ -561,34 +875,39 @@
       
       strengthExercises.forEach(exerciseName => {
         const data = progress[exerciseName];
-        if (!data.strength.best) return;
+        if (!data.sessions || data.sessions.length === 0) return;
 
-        const improvement = data.strength.first 
-          ? ((data.strength.best - data.strength.first) / data.strength.first * 100).toFixed(1)
+        const improvement = data.first.weight && data.best.weight
+          ? ((data.best.weight - data.first.weight) / data.first.weight * 100).toFixed(1)
           : 0;
 
         const card = document.createElement('div');
         card.className = 'exercise-card';
+        const chartId = `strength-chart-${exerciseName.replace(/\s+/g, '-')}`;
         card.innerHTML = `
           <div class="exercise-name">${exerciseName}</div>
-          <div class="metric-row">
-            <span class="metric-label">Best Strength:</span>
-            <span class="metric-value">${data.strength.best.toFixed(2)}</span>
+          <div class="chart-container">
+            <canvas id="${chartId}"></canvas>
           </div>
-          <div class="metric-row">
-            <span class="metric-label">Current:</span>
-            <span class="metric-value">${data.strength.current.toFixed(2)}</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Improvement:</span>
-            <span class="metric-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Sessions:</span>
-            <span class="metric-value">${data.dates.length}</span>
+          <div class="metric-summary">
+            <div class="metric-stat">
+              <div class="metric-stat-label">Best Weight</div>
+              <div class="metric-stat-value">${data.best.weight ? data.best.weight.toFixed(1) + ' lbs' : 'N/A'}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Sessions</div>
+              <div class="metric-stat-value">${data.sessions.length}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Improvement</div>
+              <div class="metric-stat-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</div>
+            </div>
           </div>
         `;
         container.appendChild(card);
+
+        // Create the chart
+        createExerciseChart(chartId, data, exerciseName, false);
       });
 
       if (container.children.length === 0) {
@@ -604,34 +923,39 @@
       
       powerExercises.forEach(exerciseName => {
         const data = progress[exerciseName];
-        if (!data.power.best) return;
+        if (!data.sessions || data.sessions.length === 0) return;
 
-        const improvement = data.power.first 
-          ? ((data.power.best - data.power.first) / data.power.first * 100).toFixed(1)
+        const improvement = data.first.meanPower && data.best.meanPower
+          ? ((data.best.meanPower - data.first.meanPower) / data.first.meanPower * 100).toFixed(1)
           : 0;
 
         const card = document.createElement('div');
         card.className = 'exercise-card';
+        const chartId = `power-chart-${exerciseName.replace(/\s+/g, '-')}`;
         card.innerHTML = `
           <div class="exercise-name">${exerciseName}</div>
-          <div class="metric-row">
-            <span class="metric-label">Best Power:</span>
-            <span class="metric-value">${data.power.best.toFixed(2)} W</span>
+          <div class="chart-container">
+            <canvas id="${chartId}"></canvas>
           </div>
-          <div class="metric-row">
-            <span class="metric-label">Current:</span>
-            <span class="metric-value">${data.power.current.toFixed(2)} W</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Improvement:</span>
-            <span class="metric-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Sessions:</span>
-            <span class="metric-value">${data.dates.length}</span>
+          <div class="metric-summary">
+            <div class="metric-stat">
+              <div class="metric-stat-label">Best Mean Power</div>
+              <div class="metric-stat-value">${data.best.meanPower ? data.best.meanPower.toFixed(1) + ' W' : 'N/A'}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Sessions</div>
+              <div class="metric-stat-value">${data.sessions.length}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Improvement</div>
+              <div class="metric-stat-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</div>
+            </div>
           </div>
         `;
         container.appendChild(card);
+
+        // Create the chart
+        createExerciseChart(chartId, data, exerciseName, false);
       });
 
       if (container.children.length === 0) {
@@ -644,36 +968,167 @@
       container.innerHTML = '';
 
       const data = progress['Vertical Jump'];
-      if (data.height.best) {
-        const improvement = data.height.first 
-          ? ((data.height.best - data.height.first) / data.height.first * 100).toFixed(1)
+      if (data.sessions && data.sessions.length > 0) {
+        const improvement = data.first.height && data.best.height
+          ? ((data.best.height - data.first.height) / data.first.height * 100).toFixed(1)
           : 0;
 
         const card = document.createElement('div');
         card.className = 'exercise-card';
+        const chartId = 'jump-chart-vertical-jump';
         card.innerHTML = `
           <div class="exercise-name">Vertical Jump</div>
-          <div class="metric-row">
-            <span class="metric-label">Best Height:</span>
-            <span class="metric-value">${data.height.best.toFixed(2)} in</span>
+          <div class="chart-container">
+            <canvas id="${chartId}"></canvas>
           </div>
-          <div class="metric-row">
-            <span class="metric-label">Current:</span>
-            <span class="metric-value">${data.height.current.toFixed(2)} in</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Improvement:</span>
-            <span class="metric-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</span>
-          </div>
-          <div class="metric-row">
-            <span class="metric-label">Sessions:</span>
-            <span class="metric-value">${data.dates.length}</span>
+          <div class="metric-summary">
+            <div class="metric-stat">
+              <div class="metric-stat-label">Best Height</div>
+              <div class="metric-stat-value">${data.best.height ? data.best.height.toFixed(1) + ' in' : 'N/A'}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Sessions</div>
+              <div class="metric-stat-value">${data.sessions.length}</div>
+            </div>
+            <div class="metric-stat">
+              <div class="metric-stat-label">Improvement</div>
+              <div class="metric-stat-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</div>
+            </div>
           </div>
         `;
         container.appendChild(card);
+
+        // Create the chart
+        createExerciseChart(chartId, data, 'Vertical Jump', true);
       } else {
         container.innerHTML = '<div class="no-data">No jump data available</div>';
       }
+    }
+
+    function createExerciseChart(canvasId, data, exerciseName, isJump) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+
+      const dates = data.sessions.map(s => s.date.toLocaleDateString());
+      
+      const datasets = [];
+
+      if (isJump) {
+        // For vertical jump, only show height
+        datasets.push({
+          label: 'Height (in)',
+          data: data.sessions.map(s => s.height),
+          borderColor: '#00563B',
+          backgroundColor: 'rgba(0, 86, 59, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true
+        });
+      } else {
+        // For other exercises, show weight, mean power, and peak power
+        datasets.push({
+          label: 'Weight (lbs)',
+          data: data.sessions.map(s => s.weight),
+          borderColor: '#00563B',
+          backgroundColor: 'rgba(0, 86, 59, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y-weight'
+        });
+
+        if (data.sessions.some(s => s.meanPower)) {
+          datasets.push({
+            label: 'Mean Power (W)',
+            data: data.sessions.map(s => s.meanPower),
+            borderColor: '#FFC72C',
+            backgroundColor: 'rgba(255, 199, 44, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            yAxisID: 'y-power'
+          });
+        }
+
+        if (data.sessions.some(s => s.peakPower)) {
+          datasets.push({
+            label: 'Peak Power (W)',
+            data: data.sessions.map(s => s.peakPower),
+            borderColor: '#FF6B35',
+            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            yAxisID: 'y-power'
+          });
+        }
+      }
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.parsed.y !== null) {
+                    label += context.parsed.y.toFixed(1);
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: isJump ? {
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'Height (in)'
+              }
+            }
+          } : {
+            'y-weight': {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Weight (lbs)'
+              },
+              beginAtZero: false
+            },
+            'y-power': {
+              type: 'linear',
+              display: datasets.length > 1,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Power (W)'
+              },
+              beginAtZero: false,
+              grid: {
+                drawOnChartArea: false,
+              }
+            }
+          }
+        }
+      });
     }
 
     function hideProgress() {

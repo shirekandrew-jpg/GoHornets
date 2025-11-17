@@ -287,6 +287,26 @@
 .cancel-button:hover {
   background: #d1d5db;
 }
+
+/* Back button styling */
+.back-button {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 2px solid var(--hornet-green);
+  background: transparent;
+  color: var(--hornet-green);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.back-button:hover {
+  background: var(--hornet-green);
+  color: var(--hornet-gold);
+}
     </style>
 </head>
 
@@ -295,7 +315,7 @@
 
     <!-- Top Controls -->
     <div class="top-controls">
-      <button class="nav-button" onclick="navigateWithHornets('index.html')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0;">
+      <button class="back-button" onclick="navigateWithHornets('index.html')">
         ← Back to Home
       </button>
       <select id="leaderboardCount" onchange="updateLeaderboardDisplay()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border: 1px solid var(--hornet-green); border-radius: 0.375rem; background: var(--hornet-green); color: white; cursor: pointer;">
