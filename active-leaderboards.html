@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Active Leaderboards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+.leaderboard-controls {
+  margin-bottom: 2rem;
+}
+
+.leaderboard-controls select {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: white;
+  cursor: pointer;
+}
+
+.leaderboards-container {
+  display: grid;
+  gap: .5rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.leaderboards-container.count-1 {
+  grid-template-columns: 1fr;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.leaderboards-container.count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+  width: calc(100vw - 2rem);
+  margin-left: calc(-50vw + 50%);
+}
+
+.leaderboards-container.count-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: none;
+  width: calc(100vw - 2rem);
+  margin-left: calc(-50vw + 50%);
+}
+
+.leaderboards-container.count-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: none;
+  width: calc(100vw - 2rem);
+  margin-left: calc(-50vw + 50%);
+}
+
+.leaderboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--hornet-green);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem 0.375rem 0 0;
+  margin-bottom: 0;
+}
+
+.leaderboard-header h3 {
+  font-size: 0.9rem;
+  color: white;
+  margin: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 1rem;
+}
+
+.filter-button {
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  color: white;
+  border: 1px solid var(--hornet-gold);
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+}
+
+.filter-button:hover {
+  background: var(--hornet-gold);
+  color: #111827;
+}
+
+/* Updated table styles for compact auto-width columns */
+.leaderboard-table {
+  width: 100% !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  margin: 0;
+  border-radius: 0 0 0.375rem 0.375rem;
+  overflow: hidden;
+  border: 1px solid var(--hornet-green);
+}
+
+.leaderboard-table thead tr {
+  background: var(--hornet-green) !important;
+  color: white;
+}
+
+.leaderboard-table th {
+  background: var(--hornet-green) !important;
+  color: white !important;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--hornet-green);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.leaderboard-table td {
+  padding: 0.5rem 0.5rem;
+  border: 1px solid #d1d5db;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  width: 1%;
+  background: white;
+}
+
+/* All columns forced to minimum width */
+.leaderboard-table th:first-child,
+.leaderboard-table td:first-child,
+.leaderboard-table th:nth-child(2),
+.leaderboard-table td:nth-child(2),
+.leaderboard-table th:nth-child(3),
+.leaderboard-table td:nth-child(3) {
+  width: 1% !important;
+}
+
+/* Rank column - centered */
+.leaderboard-table th:first-child,
+.leaderboard-table td:first-child {
+  text-align: center;
+  padding: 0.2rem 0.4rem; /* Minimal vertical padding */
+}
+
+/* Athlete column - left aligned */
+.leaderboard-table th:nth-child(2),
+.leaderboard-table td:nth-child(2) {
+  text-align: left;
+}
+
+/* Metric column - right aligned */
+.leaderboard-table th:nth-child(3),
+.leaderboard-table td:nth-child(3) {
+  text-align: right;
+}
+
+.leaderboard-table {
+  display: none;
+}
+
+.leaderboard-table.active {
+  display: table;
+}
+
+/* Modal styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #d5d5db;
+  max-width: 500px;
+  max-height: 80vh;
+  width: 90%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #111827;
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.filter-group select,
+.filter-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modal-buttons button {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.apply-button {
+  background: var(--hornet-green);
+  color: white;
+}
+
+.apply-button:hover {
+  background: var(--hornet-green-dark);
+}
+
+.cancel-button {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.cancel-button:hover {
+  background: #d1d5db;
+}
+    </style>
+</head>
+
+<body>
+  <main class="main-content">
+
+    <!-- Top Controls -->
+    <div class="top-controls">
+      <button class="nav-button" onclick="navigateWithHornets('index.html')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0;">
+        ← Back to Home
+      </button>
+      <select id="leaderboardCount" onchange="updateLeaderboardDisplay()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border: 1px solid var(--hornet-green); border-radius: 0.375rem; background: var(--hornet-green); color: white; cursor: pointer;">
+        <option value="1">1 Leaderboard</option>
+        <option value="2" selected>2 Leaderboards</option>
+        <option value="3">3 Leaderboards</option>
+        <option value="4">4 Leaderboards</option>
+      </select>
+    </div>
+
+    <!-- Leaderboards Container -->
+    <div class="leaderboards-container count-2" id="leaderboardsContainer">
+
+      <!-- Leaderboard 1 -->
+      <div class="leaderboard-wrapper">
+        <div class="leaderboard-header">
+          <h3>Leaderboard 1</h3>
+          <button class="filter-button" onclick="openFilterModal(0)">⚙️ Filter</button>
+        </div>
+        <table class="leaderboard-table active">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Athlete</th>
+              <th>Lift</th>
+              <th>Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Leaderboard 2 -->
+      <div class="leaderboard-wrapper">
+        <div class="leaderboard-header">
+          <h3>Leaderboard 2</h3>
+          <button class="filter-button" onclick="openFilterModal(1)">⚙️ Filter</button>
+        </div>
+        <table class="leaderboard-table active">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Athlete</th>
+              <th>Lift</th>
+              <th>Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Leaderboard 3 -->
+      <div class="leaderboard-wrapper">
+        <div class="leaderboard-header">
+          <h3>Leaderboard 3</h3>
+          <button class="filter-button" onclick="openFilterModal(2)">⚙️ Filter</button>
+        </div>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Athlete</th>
+              <th>Lift</th>
+              <th>Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Leaderboard 4 -->
+      <div class="leaderboard-wrapper">
+        <div class="leaderboard-header">
+          <h3>Leaderboard 4</h3>
+          <button class="filter-button" onclick="openFilterModal(3)">⚙️ Filter</button>
+        </div>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Athlete</th>
+              <th>Lift</th>
+              <th>Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal" id="filterModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Filter Leaderboard</h2>
+          <button class="close-button" onclick="closeFilterModal()">×</button>
+        </div>
+
+        <div class="filter-group">
+          <label for="genderFilter">Gender:</label>
+          <select id="genderFilter">
+            <option value="">All</option>
+            <option value="MALE">Male</option>
+            <option value="FEMALE">Female</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="dataLevel">Set or Reps:</label>
+          <select id="dataLevel" onchange="updateSortByOptions()">
+            <option value="sets">Set</option>
+            <option value="reps">Rep</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sortBy">Sort By:</label>
+          <select id="sortBy">
+            <!-- Options populated by updateSortByOptions() -->
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterLift">Filter by Lift:</label>
+          <select id="filterLift" onchange="handleLiftChange()">
+            <option value="">All Lifts</option>
+            <!-- populated by loadExercises() -->
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="velocityType">Velocity Filter:</label>
+          <select id="velocityType">
+            <option value="both">Velocity</option>
+            <option value="peak">Peak Velocity</option>
+            <option value="mean">Mean Velocity</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="minVelocity">Minimum Velocity:</label>
+          <input type="number" id="minVelocity" placeholder="0.00" step="0.01" />
+        </div>
+
+        <div class="filter-group">
+          <label for="maxVelocity">Maximum Velocity:</label>
+          <input type="number" id="maxVelocity" placeholder="2.00" step="0.01" />
+        </div>
+
+        <div class="filter-group">
+          <label for="daysBack">Time Frame:</label>
+          <select id="daysBack">
+            <option value="0">Today</option>
+            <option value="1">1 Day</option>
+            <option value="2">2 Days</option>
+            <option value="3">3 Days</option>
+            <option value="4">4 Days</option>
+            <option value="5">5 Days</option>
+            <option value="6">6 Days</option>
+            <option value="7">7 Days</option>
+            <option value="8">8 Days</option>
+            <option value="9">9 Days</option>
+            <option value="10">10 Days</option>
+            <option value="11">11 Days</option>
+            <option value="12">12 Days</option>
+            <option value="13">13 Days</option>
+            <option value="14">14 Days</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button class="apply-button" onclick="applyFilters()">Apply</button>
+          <button class="cancel-button" onclick="closeFilterModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Hornet Animation Container -->
+  <div id="hornetContainer" class="hornet-container"></div>
+
+  <script>
+  function navigateWithHornets(url) {
+  if (url === '#') return; // Don't navigate for placeholder links
+  
+  // Start hornet animation
+  createHornetSwarm();
+  
+  // Navigate after animation starts but before it completely finishes
+  // This ensures hornets continue flying on the new page
+  setTimeout(() => {
+    window.location.href = url;
+  }, 1200); // Increased delay to let more hornets get across
+}
+
+function createHornetSwarm() {
+  const container = document.getElementById('hornetContainer');
+  container.innerHTML = ''; // Clear any existing hornets
+  
+  // Create 20 hornets for more realistic swarm
+  for (let i = 0; i < 20; i++) {
+    const hornet = document.createElement('div');
+    hornet.className = 'hornet';
+    
+    // Create realistic hornet body and wings with CSS
+    hornet.innerHTML = `
+      <div style="
+        position: relative;
+        width: 24px;
+        height: 12px;
+        background: linear-gradient(90deg, #1a1a1a 0%, #8b4513 20%, #ffd700 40%, #1a1a1a 60%, #8b4513 80%, #ffd700 100%);
+        border-radius: 60% 40%;
+        box-shadow: 
+          0 0 4px rgba(255, 215, 0, 0.8),
+          inset 0 1px 0 rgba(255, 255, 255, 0.4),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+      ">
+        <div style="
+          position: absolute;
+          top: -2px;
+          left: 8px;
+          width: 12px;
+          height: 8px;
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6) 0%, rgba(200, 220, 255, 0.3) 70%, transparent 100%);
+          border-radius: 80% 20%;
+          animation: wingFlap 0.08s infinite alternate;
+          transform-origin: 20% 50%;
+        "></div>
+        <div style="
+          position: absolute;
+          top: -2px;
+          left: 4px;
+          width: 12px;
+          height: 8px;
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6) 0%, rgba(200, 220, 255, 0.3) 70%, transparent 100%);
+          border-radius: 80% 20%;
+          animation: wingFlap 0.08s infinite alternate-reverse;
+          transform-origin: 80% 50%;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 4px;
+          height: 4px;
+          background: #1a1a1a;
+          border-radius: 50%;
+          box-shadow: 8px 0 0 #1a1a1a;
+        "></div>
+      </div>
+    `;
+    
+    // Random starting position from left side (further left)
+    const startY = Math.random() * window.innerHeight;
+    const startX = -150; // Start further off screen
+    
+    // Random animation duration and delay
+    const duration = 3 + Math.random() * 3; // 3-6 seconds for longer flight
+    const delay = Math.random() * 2; // 0-2 second delay
+    
+    // Random size variation
+    const size = 0.8 + Math.random() * 0.6; // 0.8x to 1.4x size
+    
+    hornet.style.cssText = `
+      position: fixed;
+      left: ${startX}px;
+      top: ${startY}px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: flyAcross ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards;
+      transform-origin: center;
+      transform: scale(${size});
+      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));
+    `;
+    
+    container.appendChild(hornet);
+    
+    // Remove hornet after animation completes
+    setTimeout(() => {
+      if (hornet.parentNode) {
+        hornet.parentNode.removeChild(hornet);
+      }
+    }, (duration + delay + 1) * 1000);
+  }
+  
+  // Add some delayed hornets that will appear on the new page
+  setTimeout(() => {
+    createContinuousHornets();
+  }, 800);
+}
+
+// Create hornets that continue flying even after page load
+function createContinuousHornets() {
+  const container = document.getElementById('hornetContainer');
+  if (!container) return;
+  
+  // Create 5 more hornets that start flying immediately on new page
+  for (let i = 0; i < 5; i++) {
+    const hornet = document.createElement('div');
+    hornet.className = 'hornet';
+    
+    hornet.innerHTML = `
+      <div style="
+        position: relative;
+        width: 24px;
+        height: 12px;
+        background: linear-gradient(90deg, #1a1a1a 0%, #8b4513 20%, #ffd700 40%, #1a1a1a 60%, #8b4513 80%, #ffd700 100%);
+        border-radius: 60% 40%;
+        box-shadow: 
+          0 0 4px rgba(255, 215, 0, 0.8),
+          inset 0 1px 0 rgba(255, 255, 255, 0.4),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+      ">
+        <div style="
+          position: absolute;
+          top: -2px;
+          left: 8px;
+          width: 12px;
+          height: 8px;
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6) 0%, rgba(200, 220, 255, 0.3) 70%, transparent 100%);
+          border-radius: 80% 20%;
+          animation: wingFlap 0.08s infinite alternate;
+          transform-origin: 20% 50%;
+        "></div>
+        <div style="
+          position: absolute;
+          top: -2px;
+          left: 4px;
+          width: 12px;
+          height: 8px;
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6) 0%, rgba(200, 220, 255, 0.3) 70%, transparent 100%);
+          border-radius: 80% 20%;
+          animation: wingFlap 0.08s infinite alternate-reverse;
+          transform-origin: 80% 50%;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 4px;
+          height: 4px;
+          background: #1a1a1a;
+          border-radius: 50%;
+          box-shadow: 8px 0 0 #1a1a1a;
+        "></div>
+      </div>
+    `;
+    
+    const startY = Math.random() * window.innerHeight;
+    const duration = 2 + Math.random() * 2;
+    const delay = Math.random() * 0.5;
+    const size = 0.7 + Math.random() * 0.5;
+    
+    hornet.style.cssText = `
+      position: fixed;
+      left: -100px;
+      top: ${startY}px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: flyAcross ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s forwards;
+      transform-origin: center;
+      transform: scale(${size});
+      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));
+    `;
+    
+    container.appendChild(hornet);
+    
+    setTimeout(() => {
+      if (hornet.parentNode) {
+        hornet.parentNode.removeChild(hornet);
+      }
+    }, (duration + delay + 0.5) * 1000);
+  }
+}
+
+// Automatically create continuous hornets when page loads (for pages navigated to)
+document.addEventListener('DOMContentLoaded', function() {
+  // Small delay to ensure elements are ready
+  setTimeout(() => {
+    if (document.getElementById('hornetContainer') && window.location.href.includes('active-leaderboards')) {
+      createContinuousHornets();
+    }
+  }, 100);
+});
+
+  const AUTH_HEADER = 'Bearer 31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
+  const ORG_ID = 7617;
+  let currentLeaderboardIndex = 0;
+  let leaderboardFilters = {};
+  let allOrganizationUsers = []; // cache all org users
+  let refreshIntervals = {}; // store interval ids for each leaderboard
+  let rotationIntervals = {}; // store rotation interval ids for each leaderboard
+  let leaderboardData = {}; // store full leaderboard data for rotation
+  let currentPage = {}; // track current page (0 for top 10, 1 for 11-20)
+
+  // Unit conversion constants
+  const M_PER_IN = 0.0254;
+  const KG_PER_LBS = 0.453592;
+  const N_PER_LBS = 4.44822;
+  const US_PER_S = 1e-6; // microseconds to seconds
+
+  // Convert velocity from in/s to m/s
+  function convertVelocityToMs(velocityInS) {
+    if (velocityInS == null) return null;
+    return velocityInS * M_PER_IN;
+  }
+
+  // Convert power from (in^2 * lbs) / sec^3 to watts
+  function convertPowerToWatts(powerPerMassZ, weight_lbs) {
+    if (powerPerMassZ == null || weight_lbs == null) return null;
+    return (M_PER_IN * M_PER_IN) * KG_PER_LBS * powerPerMassZ * weight_lbs;
+  }
+
+  // Convert mean power from (in * lbs / s) to watts
+  function convertMeanPowerToWatts(meanPowerInLbsInS) {
+    if (meanPowerInLbsInS == null) return null;
+    return M_PER_IN * N_PER_LBS * meanPowerInLbsInS;
+  }
+
+  // Filter out ghost reps from a set's reps array
+  function getValidReps(set) {
+    if (!set.reps || set.reps.length === 0) return [];
+    
+    // If there are ghost rep indices, filter them out
+    if (set.error && set.error.ghost_rep_indices && set.error.ghost_rep_indices.length > 0) {
+      const ghostIndices = new Set(set.error.ghost_rep_indices);
+      return set.reps.filter((rep, index) => !ghostIndices.has(index));
+    }
+    
+    // No ghost reps, return all reps
+    return set.reps;
+  }
+
+  // Convert displacement from meters to inches
+  function convertDisplacementToInches(displacementM) {
+    if (displacementM == null) return null;
+    const converted = displacementM / M_PER_IN; // Convert meters to inches
+    return converted;
+  }
+
+  // Calculate jump height - for now just use the displacement value but add debugging
+  function calculateJumpHeight(rep) {
+    if (!rep) return null;
+    
+    const rawDisp = rep.concentric_disp_z ?? null;
+    if (rawDisp == null) return null;
+    
+    console.log(`Raw displacement from API: ${rawDisp} (assuming this is meters)`);
+    
+    // The displacement might already be the jump height
+    // Let's try a simple conversion and see if it makes sense
+    const convertedInches = convertDisplacementToInches(Math.abs(rawDisp));
+    console.log(`Converted to inches: ${convertedInches}`);
+    
+    return convertedInches;
+  }
+
+  // Convert ecc_time from microseconds to seconds
+  function convertEccTimeToSeconds(eccTimeUs) {
+    if (eccTimeUs == null) return null;
+    return eccTimeUs * US_PER_S;
+  }
+
+  // Get the display value and unit for a metric
+  function getMetricDisplayValue(dataObj, metricKey) {
+    const value = dataObj[metricKey];
+
+    const peakPowerMetrics = ['min_peak_power', 'avg_peak_power', 'max_peak_power'];
+    const meanPowerMetrics = ['min_mean_power', 'avg_mean_power', 'max_mean_power'];
+
+    // Better rep detection: any concentric_* rep field indicates a rep object
+    const isRep = !!dataObj && (
+      dataObj.concentric_peak_power_per_mass_z != null ||
+      dataObj.concentric_peak_velocity_z != null ||
+      dataObj.concentric_mean_velocity_z != null ||
+      dataObj.concentric_time_to_peak_velocity_z != null ||
+      dataObj.concentric_time_to_peak_power_z != null ||
+      dataObj.concentric_disp_z != null ||
+      dataObj.concentric_velocity_at_100_ms_z != null
+    );
+
+    // For individual reps with peak_power_per_mass_z
+    if (peakPowerMetrics.includes(metricKey) && isRep && dataObj.concentric_peak_power_per_mass_z != null) {
+      const repPower = convertPowerToWatts(dataObj.concentric_peak_power_per_mass_z, dataObj.weight);
+      if (repPower != null && Math.abs(repPower) > 10000) return { value: repPower / 1000, unit: 'kW' };
+      return { value: repPower, unit: 'W' };
+    }
+
+    // For individual reps with mean velocity -> mean power
+    if (meanPowerMetrics.includes(metricKey) && isRep && dataObj.concentric_mean_velocity_z != null) {
+      const meanPowerRaw = dataObj.concentric_mean_velocity_z * dataObj.weight;
+      const repMeanPower = convertMeanPowerToWatts(meanPowerRaw);
+      if (repMeanPower != null && Math.abs(repMeanPower) > 10000) return { value: repMeanPower / 1000, unit: 'kW' };
+      return { value: repMeanPower, unit: 'W' };
+    }
+
+    // Handle rep-level velocity metrics (concentric_* fields) when metricKey is a velocity metric
+    const velocityMetrics = ['avg_peak_velocity', 'max_peak_velocity', 'min_peak_velocity',
+      'avg_mean_velocity', 'max_mean_velocity', 'min_mean_velocity',
+      'avg_ecc_peak_velocity', 'max_ecc_peak_velocity', 'min_ecc_peak_velocity',
+      'avg_ecc_mean_velocity', 'max_ecc_mean_velocity', 'min_ecc_mean_velocity',
+      'avg_velocity_at_100_ms', 'max_velocity_at_100_ms', 'min_velocity_at_100_ms'];
+
+    // Handle rep-level jump height and time metrics
+    const jumpHeightMetrics = ['avg_jump_height', 'min_jump_height', 'max_jump_height'];
+    const eccTimeMetrics = ['avg_ecc_time', 'max_ecc_time', 'min_ecc_time'];
+    const timeMetrics = ['avg_time_to_peak_velocity', 'max_time_to_peak_velocity', 'min_time_to_peak_velocity',
+      'avg_time_to_peak_power', 'max_time_to_peak_power', 'min_time_to_peak_power'];
+    const pctMetrics = ['pct_1rm'];
+    const weightMetrics = ['weight'];
+    const repsMetrics = ['num_reps'];
+
+    // If this is a rep and the requested metric is a velocity metric, pull from concentric fields
+    if (isRep && velocityMetrics.includes(metricKey)) {
+      // prefer peak velocity then mean then velocity_at_100_ms
+      const repVel = dataObj.concentric_peak_velocity_z ?? dataObj.concentric_mean_velocity_z ?? dataObj.concentric_velocity_at_100_ms_z ?? null;
+      if (repVel == null) return { value: null, unit: '' };
+      return { value: convertVelocityToMs(repVel), unit: 'm/s' };
+    }
+
+    // If this is a rep and the requested metric is a time metric, pull from concentric_time_to_* fields
+    // Rep-level times are in microseconds
+    if (isRep && timeMetrics.includes(metricKey)) {
+      const repTimeUs = dataObj.concentric_time_to_peak_velocity_z ?? dataObj.concentric_time_to_peak_power_z ?? null;
+      if (repTimeUs == null) return { value: null, unit: '' };
+      console.log(`Rep time (${metricKey}): raw=${repTimeUs} µs, converted=${convertEccTimeToSeconds(repTimeUs)} s`);
+      return { value: convertEccTimeToSeconds(repTimeUs), unit: 's' };
+    }
+
+    // Handle jump height metrics (already in inches)
+    if (jumpHeightMetrics.includes(metricKey)) {
+      console.log(`Jump height metric ${metricKey}: raw value=${value}, isRep=${isRep}`);
+      if (isRep) {
+        console.log('Rep object keys:', Object.keys(dataObj));
+      }
+      if (value == null) {
+        console.log(`Jump height ${metricKey} is null`);
+        return { value: null, unit: '' };
+      }
+      return { value: Math.abs(value), unit: 'in' };
+    }
+
+    if (value == null) {
+      console.log(`Metric ${metricKey} is null on`, isRep ? 'rep' : 'set');
+      return { value: null, unit: '' };
+    }
+
+    if (velocityMetrics.includes(metricKey)) {
+      return { value: convertVelocityToMs(value), unit: 'm/s' };
+    } else if (peakPowerMetrics.includes(metricKey)) {
+      // set-level peak power: value already includes weight
+      const watts = (M_PER_IN * M_PER_IN) * KG_PER_LBS * value;
+      if (watts != null && Math.abs(watts) > 10000) return { value: watts / 1000, unit: 'kW' };
+      return { value: watts, unit: 'W' };
+    } else if (meanPowerMetrics.includes(metricKey)) {
+      const watts = convertMeanPowerToWatts(value);
+      if (watts != null && Math.abs(watts) > 10000) return { value: watts / 1000, unit: 'kW' };
+      return { value: watts, unit: 'W' };
+    } else if (jumpHeightMetrics.includes(metricKey)) {
+      // For set-level jump height metrics (already in inches)
+      // This represents the average/max jump height across all reps in the set
+      const jumpHeightInches = Math.abs(value);
+      return { value: jumpHeightInches, unit: 'in' };
+    } else if (eccTimeMetrics.includes(metricKey)) {
+      return { value: convertEccTimeToSeconds(value), unit: 's' };
+    } else if (timeMetrics.includes(metricKey)) {
+      // Set-level time metrics are already in seconds, no conversion needed
+      console.log(`Set time metric (${metricKey}): raw value=${value} s`);
+      return { value: value, unit: 's' };
+    } else if (pctMetrics.includes(metricKey)) {
+      return { value: value * 100, unit: '%' };
+    } else if (weightMetrics.includes(metricKey)) {
+      return { value: value, unit: 'lbs' };
+    } else if (repsMetrics.includes(metricKey)) {
+      return { value: value, unit: 'reps' };
+    }
+    return { value, unit: '' };
+  }
+
+  // Fetch all users in the organization (workaround CORS with try/catch)
+  async function loadAllOrganizationUsers() {
+    try {
+      const body = {
+        limit: 100,
+        next_token: null,
+        group_id: ORG_ID
+      };
+
+      const res = await fetch('https://api.perch.fit/v2/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': AUTH_HEADER,
+          'accept': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        console.warn(`Users fetch failed ${res.status} (likely CORS). Falling back to refs.users only.`);
+        return;
+      }
+      const payload = await res.json();
+      allOrganizationUsers = payload.data || [];
+      console.log('Loaded org users:', allOrganizationUsers.length);
+    } catch (err) {
+      console.warn('Error loading organization users (CORS):', err);
+      console.log('Using only users from set refs instead.');
+    }
+  }
+
+  // Get user name by id from cached org users
+  function getUserName(userId) {
+    const user = allOrganizationUsers.find(u => u.id === userId);
+    return user ? user.name : `User ${userId}`;
+  }
+
+  // helpers to convert between epoch seconds and datetime-local string
+  function epochToLocalInput(epochSec) {
+    if (!epochSec) return '';
+    const d = new Date(epochSec * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
+
+  function localInputToEpoch(localStr) {
+    if (!localStr) return 0;
+    const t = Date.parse(localStr);
+    if (isNaN(t)) return 0;
+    return Math.floor(t / 1000);
+  }
+
+  // Load tracked exercises (value = id) sorted A→Z - only those with sets in last 14 days
+  async function loadExercises() {
+    try {
+      // First fetch all tracked exercises
+      const res = await fetch('https://api.perch.fit/v3/exercises', {
+        headers: { 'Authorization': AUTH_HEADER, 'accept': 'application/json' }
+      });
+      const payload = await res.json();
+      const allTracked = (payload.data || []).filter(e => e.tracked === true);
+
+      // Now fetch sets from last 14 days to see which exercises have recent data
+      const now = Math.floor(Date.now() / 1000);
+      const fourteenDaysAgo = now - (14 * 86400);
+
+      const setsBody = {
+        limit: 1000,
+        next_token: null,
+        group_id: ORG_ID,
+        begin_time: fourteenDaysAgo,
+        end_time: now,
+        untracked: 'EXCLUDE',
+        include_reps: false
+      };
+
+      const setsRes = await fetch('https://api.perch.fit/v3/sets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': AUTH_HEADER,
+          'accept': 'application/json'
+        },
+        body: JSON.stringify(setsBody)
+      });
+
+      if (!setsRes.ok) throw new Error(`sets fetch failed ${setsRes.status}`);
+      const setsPayload = await setsRes.json();
+      const recentSets = setsPayload.data || [];
+
+      // Get unique exercise ids from recent sets
+      const exerciseIdsWithRecent = new Set(recentSets.map(s => s.exercise_id));
+
+      // Filter exercises to only those with recent sets
+      const recentExercises = allTracked.filter(e => exerciseIdsWithRecent.has(e.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const select = document.getElementById('filterLift');
+      select.innerHTML = '<option value="">All Lifts</option>';
+
+      recentExercises.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = String(e.id);
+        opt.textContent = e.name;
+        select.appendChild(opt);
+      });
+
+      console.log(`Loaded ${recentExercises.length} exercises with recent activity (last 14 days)`);
+    } catch (err) {
+      console.error('loadExercises error', err);
+    }
+  }
+
+  // Fetch /v3/sets with include_reps:true and handle pagination
+  async function fetchSetsWithReps({ exercise_id = 0, user_id = 0, limit = 100, begin_time = 0, end_time = 0 } = {}) {
+    const accumulated = { data: [], refs: { exercises: [], users: [] } };
+    let next_token = null;
+    let page = 0;
+    const maxPages = 10;
+
+    do {
+      const body = {
+        limit,
+        next_token,
+        exercise_id: exercise_id || 0,
+        group_id: ORG_ID,
+        untracked: 'EXCLUDE',
+        include_reps: true
+      };
+
+      // Only add time filters if they're actually set (not 0)
+      if (begin_time > 0) body.begin_time = begin_time;
+      if (end_time > 0) body.end_time = end_time;
+
+      console.log('POST body:', body);
+
+      const res = await fetch('https://api.perch.fit/v3/sets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': AUTH_HEADER,
+          'accept': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) throw new Error(`sets fetch failed ${res.status}`);
+      const payload = await res.json();
+      const pageData = payload.data || [];
+
+      console.log(`Page ${page}:`, pageData.length, 'sets');
+
+      accumulated.data.push(...pageData);
+
+      const refs = payload.refs || {};
+      if (Array.isArray(refs.exercises)) accumulated.refs.exercises.push(...refs.exercises);
+      if (Array.isArray(refs.users)) accumulated.refs.users.push(...refs.users);
+
+      next_token = payload.next_token || null;
+      page += 1;
+    } while (next_token && page < maxPages);
+
+    accumulated.refs.exercises = dedupeById(accumulated.refs.exercises);
+    accumulated.refs.users = dedupeById(accumulated.refs.users);
+
+    return accumulated;
+  }
+
+  function dedupeById(arr = []) {
+    const map = {};
+    arr.forEach(item => { if (item && item.id != null) map[item.id] = item; });
+    return Object.values(map);
+  }
+
+  function getSetPeakVelocity(set) {
+    let pv = set.avg_peak_velocity ?? set.max_peak_velocity ?? null;
+    if ((!pv || isNaN(pv))) {
+      const validReps = getValidReps(set);
+      if (validReps.length > 0) {
+        pv = Math.max(...validReps.map(r => (r.concentric_peak_velocity_z ?? r.concentric_mean_velocity_z ?? 0)));
+      }
+    }
+    return pv;
+  }
+
+  // Updated function to show exercise name + metric in header and simplify column headers
+  async function renderSetsToLeaderboard(payload, leaderboardIndex = 0, options = {}, pageIndex = 0) {
+    const sets = payload.data || [];
+    const refs = payload.refs || {};
+    const wrappers = document.querySelectorAll('.leaderboard-wrapper');
+    const wrapper = wrappers[leaderboardIndex];
+    if (!wrapper) return;
+
+    const table = wrapper.querySelector('.leaderboard-table');
+    const tbody = table.querySelector('tbody');
+    const header = wrapper.querySelector('.leaderboard-header h3');
+
+    // Make table visible by adding active class
+    table.classList.add('active');
+
+    tbody.innerHTML = '';
+    
+    // Process data using the new function
+    await updateLeaderboardData(payload, leaderboardIndex, options);
+
+    // Update UI elements
+    const exerciseMap = (refs.exercises || []).reduce((m, e) => (m[e.id] = e, m), {});
+    const filters = leaderboardFilters[leaderboardIndex] || {};
+    
+    // Get exercise name
+    let exerciseName = 'All Exercises';
+    if (filters.filterLift && exerciseMap[filters.filterLift]) {
+      exerciseName = exerciseMap[filters.filterLift].name;
+    }
+    
+    // Get metric description for header
+    const metricDescriptions = {
+      'avg_peak_velocity': 'Set Average Peak Velocity',
+      'max_peak_velocity': 'Set Max Peak Velocity',
+      'min_peak_velocity': 'Set Min Peak Velocity',
+      'avg_mean_velocity': 'Set Average Mean Velocity',
+      'max_mean_velocity': 'Set Max Mean Velocity',
+      'min_mean_velocity': 'Set Min Mean Velocity',
+      'avg_peak_power': 'Set Average Peak Power',
+      'max_peak_power': 'Set Max Peak Power',
+      'min_peak_power': 'Set Min Peak Power',
+      'avg_mean_power': 'Set Average Mean Power',
+      'max_mean_power': 'Set Max Mean Power',
+      'min_mean_power': 'Set Min Mean Power',
+      'avg_jump_height': 'Set Average Jump Height',
+      'max_jump_height': 'Set Max Jump Height',
+      'min_jump_height': 'Set Min Jump Height',
+      'pct_1rm': '% of 1RM',
+      'weight': 'Weight',
+      'num_reps': 'Reps'
+    };
+
+    if (options.dataLevel === 'reps') {
+      metricDescriptions['avg_peak_power'] = 'Peak Power';
+      metricDescriptions['avg_mean_power'] = 'Mean Power';
+      metricDescriptions['avg_peak_velocity'] = 'Peak Velocity';
+      metricDescriptions['avg_mean_velocity'] = 'Mean Velocity';
+      metricDescriptions['avg_jump_height'] = 'Jump Height';
+    }
+
+    const metricDescription = metricDescriptions[options.sortBy] || 'Metric';
+    header.textContent = `${exerciseName} - ${metricDescription}`;
+
+    // Set table headers
+    const thead = table.querySelector('thead tr');
+    let columnHeader = 'Metric';
+    
+    const velocityMetrics = ['avg_peak_velocity', 'max_peak_velocity', 'min_peak_velocity', 'avg_mean_velocity', 'max_mean_velocity', 'min_mean_velocity'];
+    const powerMetrics = ['avg_peak_power', 'max_peak_power', 'min_peak_power', 'avg_mean_power', 'max_mean_power', 'min_mean_power'];
+    const jumpHeights = ['avg_jump_height', 'max_jump_height', 'min_jump_height'];
+    
+    if (velocityMetrics.includes(options.sortBy)) {
+      columnHeader = 'Velocity';
+    } else if (powerMetrics.includes(options.sortBy)) {
+      columnHeader = 'Power';
+    } else if (jumpHeights.includes(options.sortBy)) {
+      columnHeader = 'Jump Height';
+    } else if (options.sortBy === 'pct_1rm') {
+      columnHeader = '% 1RM';
+    } else if (options.sortBy === 'weight') {
+      columnHeader = 'Weight';
+    } else if (options.sortBy === 'num_reps') {
+      columnHeader = 'Reps';
+    }
+    
+    thead.innerHTML = `
+      <th>Rank</th>
+      <th>Athlete</th>
+      <th>${columnHeader}</th>
+    `;
+    
+    // Render the specified page
+    renderLeaderboardPage(leaderboardIndex, pageIndex);
+  }
+
+  // called when Apply in modal is clicked
+  async function applyFilters() {
+    const genderFilter = document.getElementById('genderFilter').value;
+    const sortBy = document.getElementById('sortBy').value;
+    const filterLiftVal = document.getElementById('filterLift').value;
+    const velocityType = document.getElementById('velocityType').value;
+    const minVelocity = parseFloat(document.getElementById('minVelocity').value) || 0;
+    const maxVelocity = parseFloat(document.getElementById('maxVelocity').value) || 0;
+    const daysBack = parseInt(document.getElementById('daysBack').value) || 0;
+    const dataLevel = document.getElementById('dataLevel').value;
+
+    const now = Math.floor(Date.now() / 1000);
+    const endEpoch = now;
+    // For daysBack=0 (today), start from beginning of today; for other values, go back N days
+    const beginEpoch = daysBack === 0 
+      ? Math.floor(new Date().setHours(0, 0, 0, 0) / 1000)
+      : now - (daysBack * 86400);
+
+    leaderboardFilters[currentLeaderboardIndex] = {
+      genderFilter,
+      sortBy,
+      filterLift: filterLiftVal,
+      velocityType,
+      minVelocity,
+      maxVelocity,
+      daysBack,
+      dataLevel
+    };
+
+    const exercise_id = filterLiftVal ? Number(filterLiftVal) : 0;
+
+    try {
+      console.log('Fetching sets with:', { exercise_id, begin_time: beginEpoch, end_time: endEpoch, daysBack });
+      const payload = await fetchSetsWithReps({ exercise_id, limit: 100, begin_time: beginEpoch, end_time: endEpoch });
+      console.log('Payload received:', payload);
+      
+      // Reset to page 0 when applying new filters
+      currentPage[currentLeaderboardIndex] = 0;
+      renderSetsToLeaderboard(payload, currentLeaderboardIndex, { genderFilter, sortBy, velocityType, minVelocity, maxVelocity, dataLevel }, 0);
+
+      startAutoRefresh(currentLeaderboardIndex);
+    } catch (err) {
+      console.error('Error loading sets:', err);
+      alert('Failed to load sets (check console).');
+    }
+
+    closeFilterModal();
+  }
+
+  // Refresh a single leaderboard with its saved filters (background data update only)
+  async function refreshLeaderboard(leaderboardIndex) {
+    const filters = leaderboardFilters[leaderboardIndex];
+    if (!filters) return; // no filters set yet
+
+    const genderFilter = filters.genderFilter || '';
+    const sortBy = filters.sortBy || 'avg_peak_velocity';
+    const filterLiftVal = filters.filterLift || '';
+    const velocityType = filters.velocityType || 'both';
+    const minVelocity = filters.minVelocity || 0;
+    const maxVelocity = filters.maxVelocity || 0;
+    const daysBack = filters.daysBack || 0;
+    const dataLevel = filters.dataLevel || 'sets';
+
+    const now = Math.floor(Date.now() / 1000);
+    const endEpoch = now;
+    // For daysBack=0 (today), start from beginning of today; for other values, go back N days
+    const beginEpoch = daysBack === 0 
+      ? Math.floor(new Date().setHours(0, 0, 0, 0) / 1000)
+      : now - (daysBack * 86400);
+
+    const exercise_id = filterLiftVal ? Number(filterLiftVal) : 0;
+
+    try {
+      const payload = await fetchSetsWithReps({ exercise_id, limit: 100, begin_time: beginEpoch, end_time: endEpoch });
+      
+      // Process data in the background without interfering with rotation
+      await updateLeaderboardData(payload, leaderboardIndex, { genderFilter, sortBy, velocityType, minVelocity, maxVelocity, dataLevel });
+      
+      // Re-render current page with updated data
+      const currentPageIndex = currentPage[leaderboardIndex] || 0;
+      renderLeaderboardPage(leaderboardIndex, currentPageIndex);
+      
+      console.log(`Leaderboard ${leaderboardIndex} refreshed at ${new Date().toLocaleTimeString()}`);
+    } catch (err) {
+      console.error(`Error refreshing leaderboard ${leaderboardIndex}:`, err);
+    }
+  }
+
+  // Start leaderboard rotation between top 10 and 11-20
+  function startLeaderboardRotation(leaderboardIndex) {
+    // Clear any existing rotation interval
+    stopLeaderboardRotation(leaderboardIndex);
+    
+    // Initialize current page if not set
+    if (currentPage[leaderboardIndex] === undefined) {
+      currentPage[leaderboardIndex] = 0;
+    }
+    
+    // Start rotation every 20 seconds
+    rotationIntervals[leaderboardIndex] = setInterval(() => {
+      const data = leaderboardData[leaderboardIndex];
+      if (data && data.length > 10) {
+        // Toggle between page 0 (1-10) and page 1 (11-20)
+        currentPage[leaderboardIndex] = currentPage[leaderboardIndex] === 0 ? 1 : 0;
+        
+        // Re-render with the new page
+        renderLeaderboardPage(leaderboardIndex, currentPage[leaderboardIndex]);
+        
+        console.log(`Leaderboard ${leaderboardIndex} rotated to page ${currentPage[leaderboardIndex] + 1} (showing ranks ${(currentPage[leaderboardIndex] * 10) + 1}-${(currentPage[leaderboardIndex] + 1) * 10})`);
+      }
+    }, 20000); // 20 seconds
+    
+    console.log(`Rotation started for leaderboard ${leaderboardIndex}`);
+  }
+  
+  // Stop leaderboard rotation
+  function stopLeaderboardRotation(leaderboardIndex) {
+    if (rotationIntervals[leaderboardIndex]) {
+      clearInterval(rotationIntervals[leaderboardIndex]);
+      delete rotationIntervals[leaderboardIndex];
+      console.log(`Rotation stopped for leaderboard ${leaderboardIndex}`);
+    }
+    // Reset to page 0 when stopping rotation
+    currentPage[leaderboardIndex] = 0;
+  }
+  
+  // Update leaderboard data in background without interfering with rotation
+  async function updateLeaderboardData(payload, leaderboardIndex, options) {
+    const sets = payload.data || [];
+    const refs = payload.refs || {};
+
+    // Merge users: cached org users + users from refs
+    const allUsers = [...allOrganizationUsers];
+    if (Array.isArray(refs.users)) {
+      refs.users.forEach(u => {
+        if (!allUsers.find(ou => ou.id === u.id)) {
+          allUsers.push(u);
+        }
+      });
+    }
+
+    const userMap = allUsers.reduce((m, u) => (m[u.id] = u, m), {});
+    const exerciseMap = (refs.exercises || []).reduce((m, e) => (m[e.id] = e, m), {});
+
+    let rows = [];
+
+    // Process data the same way as renderSetsToLeaderboard
+    if (options.dataLevel === 'sets') {
+      rows = sets.map((set, idx) => {
+        const metricValue = set[options.sortBy] ?? null;
+        if (options.sortBy.includes('jump_height')) {
+          console.log(`Set ${set.id} jump height data: max_jump_height=${set.max_jump_height}, avg_jump_height=${set.avg_jump_height}, min_jump_height=${set.min_jump_height}, sortBy=${options.sortBy}, metricValue=${metricValue}`);
+        }
+        const { value: convertedValue, unit } = getMetricDisplayValue(set, options.sortBy);
+        const user = userMap[set.user_id];
+        const exercise = exerciseMap[set.exercise_id];
+
+        return {
+          set,
+          metricValue: metricValue != null ? Number(metricValue) : null,
+          convertedValue: convertedValue != null ? Number(convertedValue) : null,
+          unit: unit || '',
+          athleteName: user ? user.name : `User ${set.user_id}`,
+          liftName: exercise ? exercise.name : `Ex ${set.exercise_id}`,
+          userId: set.user_id
+        };
+      });
+    } else if (options.dataLevel === 'reps') {
+      const repsByUser = {};
+      sets.forEach(set => {
+        const user = userMap[set.user_id];
+        const exercise = exerciseMap[set.exercise_id];
+        
+        // Get only valid reps (excluding ghost reps)
+        const validReps = getValidReps(set);
+        if (validReps.length === 0) return;
+
+        validReps.forEach(rep => {
+          let repMetricValue = null;
+
+          if (options.sortBy === 'avg_peak_power' || options.sortBy === 'max_peak_power' || options.sortBy === 'min_peak_power') {
+            repMetricValue = rep.concentric_peak_power_per_mass_z ?? null;
+          } else if (options.sortBy === 'avg_mean_power' || options.sortBy === 'max_mean_power' || options.sortBy === 'min_mean_power') {
+            repMetricValue = rep.concentric_mean_velocity_z != null ? (rep.concentric_mean_velocity_z * set.weight) : null;
+          } else if (options.sortBy.includes('velocity')) {
+            repMetricValue = rep.concentric_peak_velocity_z ?? rep.concentric_mean_velocity_z ?? rep.concentric_velocity_at_100_ms_z ?? null;
+          } else if (options.sortBy.includes('jump_height')) {
+            // For jump height, use set-level data since reps don't have individual jump heights
+            console.log(`Processing jump height for set ${set.id}: max_jump_height=${set.max_jump_height}, avg_jump_height=${set.avg_jump_height}, min_jump_height=${set.min_jump_height}`);
+            repMetricValue = set.max_jump_height ?? set.avg_jump_height ?? null;
+          } else if (options.sortBy === 'pct_1rm') {
+            repMetricValue = set.pct_1rm ?? null;
+          } else if (options.sortBy === 'weight') {
+            repMetricValue = set.weight ?? null;
+          } else if (options.sortBy === 'num_reps') {
+            repMetricValue = 1;
+          } else {
+            repMetricValue = rep[options.sortBy] ?? null;
+          }
+
+          if (repMetricValue == null) {
+            console.log(`Skipping rep because ${options.sortBy} is null. repMetricValue=${repMetricValue}`);
+            return;
+          }
+
+          // For jump height metrics, create object with jump height fields for getMetricDisplayValue
+          let dataForDisplay;
+          if (options.sortBy.includes('jump_height')) {
+            dataForDisplay = {
+              ...rep,
+              weight: set.weight,
+              [options.sortBy]: repMetricValue // Add the jump height value directly
+            };
+            console.log(`Created dataForDisplay for jump height: ${options.sortBy}=${repMetricValue}`);
+          } else {
+            dataForDisplay = { ...rep, weight: set.weight };
+          }
+
+          const { value: convertedValue, unit } = getMetricDisplayValue(dataForDisplay, options.sortBy);
+          console.log(`getMetricDisplayValue returned: convertedValue=${convertedValue}, unit=${unit}`);
+
+          const key = `${set.user_id}-${set.exercise_id}`;
+          if (!repsByUser[key]) {
+            repsByUser[key] = {
+              metricValue: Number(repMetricValue),
+              convertedValue: convertedValue != null ? Number(convertedValue) : null,
+              unit: unit || '',
+              athleteName: user ? user.name : `User ${set.user_id}`,
+              liftName: exercise ? exercise.name : `Ex ${set.exercise_id}`,
+              userId: set.user_id,
+              set: set
+            };
+          } else {
+            const existing = repsByUser[key];
+            const newVal = convertedValue != null ? Number(convertedValue) : null;
+            if (newVal == null) return;
+            if ((newVal || 0) > (existing.convertedValue || 0)) {
+              existing.metricValue = Number(repMetricValue);
+              existing.convertedValue = newVal;
+              existing.unit = unit || '';
+            }
+          }
+        });
+      });
+      rows = Object.values(repsByUser);
+    }
+
+    // Apply velocity filters
+    if ((options.minVelocity && options.minVelocity > 0) || (options.maxVelocity && options.maxVelocity > 0)) {
+      rows = rows.filter(row => {
+        let velocityToCheck = null;
+        
+        if (options.velocityType === 'peak' || options.velocityType === 'both') {
+          velocityToCheck = row.set.avg_peak_velocity ?? row.set.max_peak_velocity ?? null;
+          if (velocityToCheck) {
+            velocityToCheck = convertVelocityToMs(velocityToCheck);
+          }
+        }
+        
+        if (!velocityToCheck && (options.velocityType === 'mean' || options.velocityType === 'both')) {
+          velocityToCheck = row.set.avg_mean_velocity ?? row.set.max_mean_velocity ?? null;
+          if (velocityToCheck) {
+            velocityToCheck = convertVelocityToMs(velocityToCheck);
+          }
+        }
+        
+        if (velocityToCheck === null) return true;
+        
+        if (options.minVelocity && options.minVelocity > 0 && velocityToCheck < options.minVelocity) {
+          return false;
+        }
+        
+        if (options.maxVelocity && options.maxVelocity > 0 && velocityToCheck > options.maxVelocity) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
+
+    // Apply gender filter
+    if (options.genderFilter && options.genderFilter !== '') {
+      rows = rows.filter(row => {
+        const user = userMap[row.userId];
+        return user && user.gender === options.genderFilter;
+      });
+    }
+
+    // Get best per athlete
+    const athleteBestMap = {};
+    rows.forEach(row => {
+      if (!athleteBestMap[row.userId]) {
+        athleteBestMap[row.userId] = row;
+      } else {
+        const cur = athleteBestMap[row.userId];
+        if ((row.convertedValue || 0) > (cur.convertedValue || 0)) athleteBestMap[row.userId] = row;
+      }
+    });
+
+    rows = Object.values(athleteBestMap);
+
+    // Sort
+    rows.sort((a, b) => {
+      const aVal = a.convertedValue != null ? a.convertedValue : -Infinity;
+      const bVal = b.convertedValue != null ? b.convertedValue : -Infinity;
+      return bVal - aVal;
+    });
+
+    // Store top 20 for rotation
+    const allRows = rows.slice(0, 20);
+    leaderboardData[leaderboardIndex] = allRows;
+
+    // Start or stop rotation based on data availability (only if not already set)
+    if (allRows.length > 10) {
+      if (!rotationIntervals[leaderboardIndex]) {
+        startLeaderboardRotation(leaderboardIndex);
+      }
+    } else {
+      stopLeaderboardRotation(leaderboardIndex);
+    }
+  }
+
+  // Render a specific page of the leaderboard
+  function renderLeaderboardPage(leaderboardIndex, pageIndex) {
+    const data = leaderboardData[leaderboardIndex];
+    if (!data) return;
+    
+    const wrappers = document.querySelectorAll('.leaderboard-wrapper');
+    const wrapper = wrappers[leaderboardIndex];
+    if (!wrapper) return;
+    
+    const tbody = wrapper.querySelector('.leaderboard-table tbody');
+    tbody.innerHTML = '';
+    
+    // Get the rows for this page
+    const startIndex = pageIndex * 10;
+    const endIndex = startIndex + 10;
+    const pageRows = data.slice(startIndex, endIndex);
+    
+    // Render the rows
+    pageRows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      const displayValue = r.convertedValue;
+      const unit = r.unit || '';
+      
+      // Debug jump height display
+      const filters = leaderboardFilters[leaderboardIndex] || {};
+      if (filters.sortBy && filters.sortBy.includes('jump_height')) {
+        console.log(`Rendering jump height row ${i}: displayValue=${displayValue}, unit='${unit}', metricValue=${r.metricValue}, athleteName=${r.athleteName}`);
+      }
+      
+      let displayStr = '';
+      if (displayValue !== null && displayValue !== undefined) {
+        if (unit === 'W' || unit === 'kW') {
+          if (unit === 'kW') {
+            displayStr = Math.round(displayValue * 1000).toString();
+          } else {
+            displayStr = Math.round(displayValue).toString();
+          }
+        } else {
+          displayStr = `${Number(displayValue).toFixed(2)} ${unit}`;
+        }
+      } else {
+        console.log(`Display value is null/undefined for row ${i}: displayValue=${displayValue}, unit='${unit}'`);
+      }
+      
+      const actualRank = startIndex + i + 1;
+      
+      tr.setAttribute('data-rank', actualRank);
+      tr.innerHTML = `
+        <td>${actualRank}</td>
+        <td>${escapeHtml(r.athleteName)}</td>
+        <td>${displayStr}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Start auto-refresh for a leaderboard (every 10 seconds)
+  function startAutoRefresh(leaderboardIndex) {
+    // Clear any existing interval for this leaderboard
+    if (refreshIntervals[leaderboardIndex]) {
+      clearInterval(refreshIntervals[leaderboardIndex]);
+    }
+
+    // Refresh immediately
+    refreshLeaderboard(leaderboardIndex);
+
+    // Then refresh every 10 seconds
+    refreshIntervals[leaderboardIndex] = setInterval(() => {
+      refreshLeaderboard(leaderboardIndex);
+    }, 10000);
+
+    console.log(`Auto-refresh started for leaderboard ${leaderboardIndex}`);
+  }
+
+  // Stop auto-refresh for a leaderboard
+  function stopAutoRefresh(leaderboardIndex) {
+    if (refreshIntervals[leaderboardIndex]) {
+      clearInterval(refreshIntervals[leaderboardIndex]);
+      delete refreshIntervals[leaderboardIndex];
+      console.log(`Auto-refresh stopped for leaderboard ${leaderboardIndex}`);
+    }
+    // Also stop rotation when stopping refresh
+    stopLeaderboardRotation(leaderboardIndex);
+  }
+
+  // UI helpers
+  function openFilterModal(index) {
+    currentLeaderboardIndex = index;
+    const saved = leaderboardFilters[index] || {};
+
+    document.getElementById('genderFilter').value = saved.genderFilter || '';
+    document.getElementById('dataLevel').value = saved.dataLevel || 'sets';
+    updateSortByOptions(); // Update sort options first
+    document.getElementById('sortBy').value = saved.sortBy || 'avg_peak_velocity';
+    document.getElementById('filterLift').value = saved.filterLift || '';
+    document.getElementById('velocityType').value = saved.velocityType || 'both';
+    document.getElementById('minVelocity').value = saved.minVelocity || '';
+    document.getElementById('maxVelocity').value = saved.maxVelocity || '';
+    document.getElementById('daysBack').value = saved.daysBack || '0';
+
+    document.getElementById('filterModal').classList.add('active');
+  }
+
+  // Auto-configure settings when vertical jump is selected
+  function handleLiftChange() {
+    const filterLift = document.getElementById('filterLift');
+    const sortBy = document.getElementById('sortBy');
+    const dataLevel = document.getElementById('dataLevel');
+    
+    // Check if Vertical Jump (ID 449) is selected
+    if (filterLift.value === '449') {
+      // Set to reps and jump height sorting
+      dataLevel.value = 'reps';
+      updateSortByOptions();
+      sortBy.value = 'avg_jump_height';
+    }
+  }
+
+  function closeFilterModal() {
+    document.getElementById('filterModal').classList.remove('active');
+  }
+
+  function updateLeaderboardDisplay() {
+    const count = document.getElementById('leaderboardCount').value;
+    const container = document.getElementById('leaderboardsContainer');
+    const wrappers = document.querySelectorAll('.leaderboard-wrapper');
+
+    container.className = `leaderboards-container count-${count}`;
+
+    wrappers.forEach((wrapper, index) => {
+      if (index < count) {
+        wrapper.style.display = 'flex';
+      } else {
+        wrapper.style.display = 'none';
+        stopAutoRefresh(index); // stop refresh and rotation for hidden leaderboards
+      }
+    });
+  }
+
+  // Update Sort By dropdown based on Data Level selection
+  function updateSortByOptions() {
+    const dataLevel = document.getElementById('dataLevel').value;
+    const sortBySelect = document.getElementById('sortBy');
+    
+    // Clear existing options
+    sortBySelect.innerHTML = '';
+    
+    let options = [];
+    
+    if (dataLevel === 'sets') {
+      // Set-level metrics (averages across all reps in the set)
+      options = [
+        { value: 'avg_peak_power', text: 'Set Average Peak Power' },
+        { value: 'avg_mean_power', text: 'Set Average Mean Power' },
+        { value: 'avg_peak_velocity', text: 'Set Average Peak Velocity' },
+        { value: 'avg_mean_velocity', text: 'Set Average Mean Velocity' },
+        { value: 'max_peak_power', text: 'Set Max Peak Power' },
+        { value: 'max_mean_power', text: 'Set Max Mean Power' },
+        { value: 'max_peak_velocity', text: 'Set Max Peak Velocity' },
+        { value: 'max_mean_velocity', text: 'Set Max Mean Velocity' },
+        { value: 'avg_jump_height', text: 'Set Average Jump Height' },
+        { value: 'max_jump_height', text: 'Set Max Jump Height' },
+        { value: 'pct_1rm', text: '% of 1RM' },
+        { value: 'weight', text: 'Weight (lbs)' },
+        { value: 'num_reps', text: 'Number of Reps' }
+      ];
+    } else if (dataLevel === 'reps') {
+      // Individual rep-level metrics
+      options = [
+        { value: 'avg_peak_power', text: 'Peak Power' },
+        { value: 'avg_mean_power', text: 'Mean Power' },
+        { value: 'avg_peak_velocity', text: 'Peak Velocity' },
+        { value: 'avg_mean_velocity', text: 'Mean Velocity' },
+        { value: 'avg_jump_height', text: 'Jump Height' },
+        { value: 'weight', text: 'Weight (lbs)' },
+        { value: 'pct_1rm', text: '% of 1RM' }
+      ];
+    }
+    
+    // Populate dropdown
+    options.forEach(option => {
+      const optionElement = document.createElement('option');
+      optionElement.value = option.value;
+      optionElement.textContent = option.text;
+      sortBySelect.appendChild(optionElement);
+    });
+  }
+
+  // Initialize the sort by options when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    updateSortByOptions();
+  });
+
+  window.onclick = function(event) {
+    const modal = document.getElementById('filterModal');
+    if (event.target === modal) closeFilterModal();
+  };
+
+  function escapeHtml(str = '') {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  // init
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAllOrganizationUsers();
+    loadExercises();
+    updateLeaderboardDisplay();
+  });
+  </script>
+</body>
+</html>
