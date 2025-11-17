@@ -3,24 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Go Hornets</title>
+  <title>Athlete Login - Go Hornets</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-
     .login-container {
       max-width: 450px;
-      width: 90%;
+      margin: 60px auto;
       padding: 40px;
       background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
       border-radius: 20px;
@@ -129,6 +121,24 @@
       display: block;
     }
 
+    .admin-link {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .admin-link a {
+      color: #d4af37;
+      text-decoration: none;
+      font-size: 0.9em;
+      transition: color 0.3s ease;
+    }
+
+    .admin-link a:hover {
+      color: #22c55e;
+    }
+
     .forgot-password {
       text-align: right;
       margin-top: -10px;
@@ -144,31 +154,13 @@
     .forgot-password a:hover {
       color: #d4af37;
     }
-
-    .setup-link {
-      text-align: center;
-      margin-top: 30px;
-      padding-top: 30px;
-      border-top: 1px solid rgba(212, 175, 55, 0.2);
-    }
-
-    .setup-link a {
-      color: #d4af37;
-      text-decoration: none;
-      font-size: 0.9em;
-      transition: color 0.3s ease;
-    }
-
-    .setup-link a:hover {
-      color: #22c55e;
-    }
   </style>
 </head>
 <body>
   <div class="login-container">
     <div class="login-header">
-      <h1>🐝 Go Hornets</h1>
-      <p>Sports Performance Portal</p>
+      <h1>🐝 Athlete Portal</h1>
+      <p>Log in to view your performance data</p>
     </div>
 
     <div class="error-message" id="errorMessage"></div>
@@ -193,50 +185,13 @@
       </button>
     </form>
 
+    <div class="admin-link">
+      <a href="index.html">← Admin Dashboard</a>
+    </div>
   </div>
 
   <script src="auth.js"></script>
   <script>
-    // Auto-create admin account if no accounts exist
-    async function initializeAdminAccount() {
-      const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
-      
-      // If no accounts exist, create default admin
-      if (credentials.length === 0) {
-        const password = 'SCDpower!1';
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        const adminAccount = {
-          id: null,
-          firstName: 'Shirek',
-          lastName: 'Espinoza Andrew',
-          email: 'aespinoza@savcds.org',
-          passwordHash: passwordHash,
-          inviteToken: null,
-          admin: true,
-          active: true,
-          createdAt: Date.now(),
-          setupCompletedAt: Date.now()
-        };
-
-        credentials.push(adminAccount);
-        localStorage.setItem('athlete_credentials', JSON.stringify(credentials));
-        console.log('Admin account created automatically');
-      }
-    }
-
-    // Initialize admin account on page load
-    initializeAdminAccount();
-
-    // Check if already logged in
-    if (isAthleteLoggedIn()) {
-      window.location.href = 'dashboard.html';
-    }
-
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -282,7 +237,7 @@
       localStorage.setItem('hornet_athlete_session', JSON.stringify(session));
 
       // Redirect to dashboard
-      window.location.href = 'dashboard.html';
+      window.location.href = 'athlete-dashboard.html';
     });
 
     async function hashPassword(password) {

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Go Hornets</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1 id="headerTitle">🐝 Hornets Sports Performance</h1>
+    <button class="logout-button" onclick="logoutAthlete()" style="padding: 10px 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+      🚪 Logout
+    </button>
+  </header>
+
+  <main class="main-content">
+    <section class="button-grid">
+      <button id="btn-active" class="nav-button" onclick="navigateWithHornets('active-leaderboards.html')">
+        📊 Active Leaderboards
+      </button>
+
+      <button id="btn-ratings" class="nav-button" onclick="navigateWithHornets('hornet-ratings.html')">
+        ⭐ Hornet Ratings
+      </button>
+      
+      <button id="btn-progress" class="nav-button" onclick="navigateWithHornets('Athlete-Progress.html')">
+        📈 Athlete Progress
+      </button>
+      
+      <button id="btn-current" class="nav-button" onclick="navigateWithHornets('current-hornet-leaders.html')">
+        🏆 Current Hornet Leaders
+      </button>
+      
+      <button id="btn-alltime" class="nav-button" onclick="navigateWithHornets('all-time-hornet-leaders.html')">
+        👑 All Time Hornet Leaders
+      </button>
+      
+      <button id="btn-data-check" class="nav-button" onclick="navigateWithHornets('data-check.html')">
+        🔍 Data Check
+      </button>
+
+      <button id="btn-my-dashboard" class="nav-button" onclick="navigateWithHornets('athlete-dashboard.html')" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
+        📈 My Performance
+      </button>
+      
+      <!-- Admin only button -->
+      <button id="btn-athlete-mgmt" class="nav-button admin-only" onclick="navigateWithHornets('admin-athlete-management.html')" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); display: none;">
+        👥 Manage Athlete Access
+      </button>
+    </section>
+  </main>
+
+  <!-- Hornet Animation Container -->
+  <div id="hornetContainer" class="hornet-container"></div>
+
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Check authentication
+    if (!requireAthleteAuth()) {
+      // Will redirect to login if not authenticated
+    }
+
+    // Get session and personalize
+    const session = getAthleteSession();
+    if (session) {
+      // Update header with user's name
+      const adminBadge = session.isAdmin ? ' <span style="font-size: 0.5em; background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); padding: 4px 12px; border-radius: 12px; color: #fff;">ADMIN</span>' : '';
+      document.getElementById('headerTitle').innerHTML = `🐝 Welcome, ${session.firstName}${adminBadge}`;
+
+      // Show admin-only buttons
+      if (session.isAdmin) {
+        document.querySelectorAll('.admin-only').forEach(btn => {
+          btn.style.display = 'block';
+        });
+      }
+
+      // Extend session on activity
+      extendSession();
+    }
+  </script>
+</body>
+</html>

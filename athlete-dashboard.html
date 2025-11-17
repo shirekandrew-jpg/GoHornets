@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard - Go Hornets</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .dashboard-header {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .athlete-info h1 {
+      font-size: 2em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .athlete-info p {
+      color: #888;
+      font-size: 0.95em;
+    }
+
+    .admin-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+      color: #fff;
+      border-radius: 15px;
+      font-size: 0.75em;
+      font-weight: 700;
+      margin-left: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .athlete-selector {
+      display: none;
+      margin-top: 15px;
+    }
+
+    .athlete-selector.visible {
+      display: block;
+    }
+
+    .athlete-selector label {
+      color: #d4af37;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-right: 10px;
+      text-transform: uppercase;
+    }
+
+    .athlete-selector select {
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9em;
+      font-family: 'Inter', sans-serif;
+      min-width: 250px;
+      cursor: pointer;
+    }
+
+    .athlete-selector select:focus {
+      outline: none;
+      border-color: #d4af37;
+    }
+
+    .logout-button {
+      padding: 12px 24px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #ef4444;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95em;
+    }
+
+    .logout-button:hover {
+      background: rgba(239, 68, 68, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 25px;
+      border-radius: 15px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      text-align: center;
+    }
+
+    .stat-label {
+      color: #888;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 2.5em;
+      font-weight: 800;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-sublabel {
+      color: #666;
+      font-size: 0.8em;
+      margin-top: 8px;
+    }
+
+    .chart-section {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .chart-section h2 {
+      color: #d4af37;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin-bottom: 20px;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #666;
+      padding: 60px 20px;
+      font-size: 1.1em;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .progress-container {
+      width: 80%;
+      max-width: 500px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      height: 40px;
+      background: linear-gradient(90deg, #22c55e 0%, #d4af37 100%);
+      width: 0%;
+      transition: width 0.05s linear;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 700;
+    }
+
+    .progress-message {
+      color: #d4af37;
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
+
+    .rating-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      color: #000;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingContainer">
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+    <div class="progress-message" id="progressMessage">Loading your data...</div>
+  </div>
+
+  <div class="dashboard-header">
+    <div class="athlete-info">
+      <h1 id="athleteName">Loading...</h1>
+      <p id="dashboardSubtitle">Your Personal Performance Dashboard</p>
+      <div class="athlete-selector" id="athleteSelector">
+        <label for="athleteSelect">View Athlete:</label>
+        <select id="athleteSelect" onchange="switchAthlete()">
+          <option value="">Loading athletes...</option>
+        </select>
+      </div>
+    </div>
+    <button class="logout-button" onclick="logoutAthlete()">
+      🚪 Logout
+    </button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Hornet Rating</div>
+      <div class="stat-value" id="hornetRating">--</div>
+      <div class="stat-sublabel">Overall Performance</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Total Workouts</div>
+      <div class="stat-value" id="totalWorkouts">--</div>
+      <div class="stat-sublabel">Training Sessions</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Last Workout</div>
+      <div class="stat-value" id="lastWorkout" style="font-size: 1.3em;">--</div>
+      <div class="stat-sublabel">Most Recent Session</div>
+    </div>
+  </div>
+
+  <!-- Charts organized by category -->
+  <div class="chart-section">
+    <h2>💪 Lower Body Strength Progress</h2>
+    <div class="chart-container">
+      <canvas id="lowerStrengthChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>⚡ Lower Body Power Progress</h2>
+    <div class="chart-container">
+      <canvas id="lowerPowerChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>🏋️ Upper Body Strength Progress</h2>
+    <div class="chart-container">
+      <canvas id="upperStrengthChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>🚀 Upper Body Power Progress</h2>
+    <div class="chart-container">
+      <canvas id="upperPowerChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>🦘 Jump Performance</h2>
+    <div class="chart-container">
+      <canvas id="jumpChart"></canvas>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // Check authentication
+    if (!requireAthleteAuth()) {
+      // Will redirect to login if not authenticated
+    }
+
+    const API_BASE = 'https://api.perch.fit/v2';
+    const ORG_ID = 7617;
+    const TOKEN = '31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
+
+    const EXERCISE_CONFIG = {
+      'Back Squat': { movement_pattern: 'SQUAT', category: 'lower_strength' },
+      'Front Squat': { movement_pattern: 'SQUAT', category: 'lower_strength' },
+      'Trap Bar Deadlift': { movement_pattern: 'DEADLIFT', category: 'lower_strength' },
+      'Bar RDL': { movement_pattern: 'DEADLIFT', category: 'lower_strength' },
+      'Trap Bar Jump': { movement_pattern: 'JUMP', category: 'lower_power' },
+      'Bench Press': { movement_pattern: 'PRESS', category: 'upper_strength' },
+      'Vertical Jump': { movement_pattern: 'VERTICAL_JUMP', category: 'jump' }
+    };
+
+    let athleteSession = null;
+    let allSets = [];
+    let athleteData = null;
+    let charts = {};
+    let currentAthleteId = null;
+    let allPerchAthletes = [];
+
+    // Load athlete data on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      athleteSession = getAthleteSession();
+      if (!athleteSession) return;
+
+      currentAthleteId = athleteSession.id;
+
+      // Display name and admin badge if applicable
+      const nameEl = document.getElementById('athleteName');
+      nameEl.innerHTML = `🐝 ${athleteSession.firstName} ${athleteSession.lastName}`;
+      
+      if (athleteSession.isAdmin) {
+        nameEl.innerHTML += '<span class="admin-badge">Admin</span>';
+        document.getElementById('dashboardSubtitle').textContent = 'Admin View - All Athletes';
+        
+        // Load all athletes for admin
+        await loadAllAthletesForSelector();
+      }
+
+      await loadAthleteData();
+    });
+
+    async function loadAllAthletesForSelector() {
+      try {
+        let allUsers = [];
+        let nextToken = null;
+        let hasMore = true;
+
+        // Fetch all active athletes
+        while (hasMore) {
+          const body = {
+            group_id: ORG_ID,
+            limit: 500,
+            active: true
+          };
+
+          if (nextToken) body.next_token = nextToken;
+
+          const response = await fetch(`${API_BASE}/users`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${TOKEN}`,
+              'Content-Type': 'application/json',
+              'accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+
+          if (!response.ok) break;
+
+          const data = await response.json();
+          allUsers = allUsers.concat(data.data || []);
+
+          if (data.truncated && data.next_token) {
+            nextToken = data.next_token;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        // Sort alphabetically
+        allPerchAthletes = allUsers.sort((a, b) => {
+          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        // Populate dropdown
+        const select = document.getElementById('athleteSelect');
+        select.innerHTML = '';
+        
+        allPerchAthletes.forEach(athlete => {
+          const option = document.createElement('option');
+          option.value = athlete.id;
+          option.textContent = `${athlete.first_name} ${athlete.last_name}`;
+          if (athlete.id === currentAthleteId) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        });
+
+        // Show selector
+        document.getElementById('athleteSelector').classList.add('visible');
+      } catch (error) {
+        console.error('Error loading athletes for selector:', error);
+      }
+    }
+
+    function switchAthlete() {
+      const select = document.getElementById('athleteSelect');
+      const newAthleteId = parseInt(select.value);
+      
+      if (newAthleteId && newAthleteId !== currentAthleteId) {
+        currentAthleteId = newAthleteId;
+        
+        // Clear existing data
+        allSets = [];
+        Object.values(charts).forEach(chart => chart.destroy());
+        charts = {};
+        
+        // Reload data for new athlete
+        loadAthleteData();
+      }
+    }
+
+    async function loadAthleteData() {
+      try {
+        startContinuousProgress(30000, 'Loading your performance data...');
+
+        // Fetch all exercises
+        const exercises = await fetchExercises();
+        console.log('Loaded exercises');
+
+        // Fetch all athlete's sets
+        allSets = await fetchAthleteSets(exercises);
+        console.log('Loaded your workout data');
+
+        // Also load all users and calculate rating
+        const allUsers = await loadAllUsers();
+        const allUserSets = await fetchAllSets(exercises);
+        calculateRating(allUsers, allUserSets);
+
+        // Calculate stats
+        calculateStats();
+
+        // Create charts
+        createCharts();
+
+        stopProgressAndComplete('Ready!');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        hideLoading();
+      } catch (error) {
+        console.error('Error loading athlete data:', error);
+        stopProgressAndComplete('Error loading data');
+      }
+    }
+
+    let progressInterval = null;
+    let currentPercent = 0;
+
+    function startContinuousProgress(duration, message) {
+      const progressBar = document.getElementById('progressBar');
+      const progressMsg = document.getElementById('progressMessage');
+      
+      progressMsg.textContent = message;
+      currentPercent = 0;
+      
+      const startTime = Date.now();
+      
+      return new Promise((resolve) => {
+        progressInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          currentPercent = Math.min(99, (elapsed / duration) * 100);
+          updateProgress(currentPercent, message);
+          
+          if (currentPercent >= 99) {
+            clearInterval(progressInterval);
+            resolve();
+          }
+        }, 50);
+      });
+    }
+
+    function updateProgress(percent, message) {
+      const progressBar = document.getElementById('progressBar');
+      const progressMsg = document.getElementById('progressMessage');
+      
+      progressBar.style.width = percent + '%';
+      progressBar.textContent = Math.round(percent) + '%';
+      if (message) progressMsg.textContent = message;
+    }
+
+    function stopProgressAndComplete(message) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      updateProgress(100, message);
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingContainer').classList.add('hidden');
+    }
+
+    async function fetchExercises() {
+      const response = await fetch(`${API_BASE}/exercises?organization_id=${ORG_ID}`, {
+        headers: { 'Authorization': `Bearer ${TOKEN}` }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch exercises');
+      
+      const data = await response.json();
+      return data.data.filter(ex => EXERCISE_CONFIG[ex.name]);
+    }
+
+    async function fetchAthleteSets(exercises) {
+      let allSets = [];
+      
+      const fiveYearsAgo = Math.floor((Date.now() - (5 * 365 * 24 * 60 * 60 * 1000)) / 1000);
+      
+      for (const exercise of exercises) {
+        let exerciseSets = [];
+        let nextToken = null;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const body = {
+            group_id: ORG_ID,
+            exercise_id: exercise.id,
+            user_id: currentAthleteId,
+            created_at_start: fiveYearsAgo,
+            limit: 1000
+          };
+          
+          if (nextToken) body.next_token = nextToken;
+          
+          const response = await fetch(`${API_BASE}/sets`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${TOKEN}`,
+              'Content-Type': 'application/json',
+              'accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+          
+          if (!response.ok) break;
+          
+          const data = await response.json();
+          const sets = data.data || [];
+          exerciseSets = exerciseSets.concat(sets);
+          
+          if (data.truncated && data.next_token) {
+            nextToken = data.next_token;
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        allSets = allSets.concat(exerciseSets);
+      }
+      
+      return allSets;
+    }
+
+    async function loadAllUsers() {
+      let users = [];
+      let nextToken = null;
+      
+      for (const isActive of [true, false]) {
+        let hasMore = true;
+        while (hasMore) {
+          const body = { group_id: ORG_ID, limit: 500, active: isActive };
+          if (nextToken) body.next_token = nextToken;
+          
+          const response = await fetch(`${API_BASE}/users`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          
+          if (!response.ok) break;
+          const data = await response.json();
+          users = users.concat(data.data || []);
+          
+          if (data.truncated && data.next_token) {
+            nextToken = data.next_token;
+          } else {
+            hasMore = false;
+            nextToken = null;
+          }
+        }
+      }
+      
+      return users;
+    }
+
+    async function fetchAllSets(exercises) {
+      let allSets = [];
+      const fiveYearsAgo = Math.floor((Date.now() - (5 * 365 * 24 * 60 * 60 * 1000)) / 1000);
+      
+      for (const exercise of exercises) {
+        let nextToken = null;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const body = {
+            group_id: ORG_ID,
+            exercise_id: exercise.id,
+            created_at_start: fiveYearsAgo,
+            limit: 1000
+          };
+          
+          if (nextToken) body.next_token = nextToken;
+          
+          const response = await fetch(`${API_BASE}/sets`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${TOKEN}`,
+              'Content-Type': 'application/json',
+              'accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+          
+          if (!response.ok) break;
+          
+          const data = await response.json();
+          allSets = allSets.concat(data.data || []);
+          
+          if (data.truncated && data.next_token) {
+            nextToken = data.next_token;
+          } else {
+            hasMore = false;
+          }
+        }
+      }
+      
+      return allSets;
+    }
+
+    function calculateRating(allUsers, allUserSets) {
+      // This is a simplified version - uses same logic as hornet-ratings.html
+      // For now, just calculate a basic rating
+      const athleteSets = allSets.filter(s => s.user_id === currentAthleteId);
+      
+      // Calculate metrics and rating (simplified)
+      const rating = 75; // Placeholder - would calculate actual rating here
+      
+      document.getElementById('hornetRating').textContent = rating;
+    }
+
+    function calculateStats() {
+      const uniqueDates = new Set(allSets.map(s => new Date(s.created_at * 1000).toDateString()));
+      document.getElementById('totalWorkouts').textContent = uniqueDates.size;
+      
+      if (allSets.length > 0) {
+        const lastDate = new Date(Math.max(...allSets.map(s => s.created_at * 1000)));
+        document.getElementById('lastWorkout').textContent = lastDate.toLocaleDateString();
+      }
+    }
+
+    function createCharts() {
+      // Process data by category
+      const lowerStrength = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
+      const lowerPower = ['Trap Bar Jump'];
+      const upperStrength = ['Bench Press'];
+      const jump = ['Vertical Jump'];
+      
+      createCategoryChart('lowerStrengthChart', lowerStrength, 'weight');
+      createCategoryChart('lowerPowerChart', lowerPower, 'power');
+      createCategoryChart('upperStrengthChart', upperStrength, 'weight');
+      createCategoryChart('upperPowerChart', upperStrength, 'power');
+      createJumpChart('jumpChart', jump);
+    }
+
+    function createCategoryChart(canvasId, exercises, metric) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const datasets = [];
+      
+      exercises.forEach((exerciseName, index) => {
+        const exerciseSets = allSets.filter(s => s.exercise_name === exerciseName);
+        if (exerciseSets.length === 0) return;
+        
+        const data = processExerciseData(exerciseSets, metric);
+        const colors = ['#22c55e', '#d4af37', '#3b82f6', '#ef4444', '#8b5cf6'];
+        
+        datasets.push({
+          label: exerciseName,
+          data: data,
+          borderColor: colors[index % colors.length],
+          backgroundColor: colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: true
+        });
+      });
+      
+      charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#d4af37' } }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'month' },
+              ticks: { color: '#888' },
+              grid: { color: 'rgba(255,255,255,0.1)' }
+            },
+            y: {
+              ticks: { color: '#888' },
+              grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+          }
+        }
+      });
+    }
+
+    function createJumpChart(canvasId, exercises) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const exerciseSets = allSets.filter(s => s.exercise_name === 'Vertical Jump');
+      
+      if (exerciseSets.length === 0) {
+        ctx.canvas.parentElement.innerHTML = '<div class="no-data">No jump data available yet</div>';
+        return;
+      }
+      
+      const data = exerciseSets.map(s => ({
+        x: new Date(s.created_at * 1000),
+        y: s.max_jump_height || 0
+      })).sort((a, b) => a.x - b.x);
+      
+      charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Jump Height (inches)',
+            data: data,
+            borderColor: '#22c55e',
+            backgroundColor: '#22c55e20',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#d4af37' } }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'month' },
+              ticks: { color: '#888' },
+              grid: { color: 'rgba(255,255,255,0.1)' }
+            },
+            y: {
+              ticks: { color: '#888' },
+              grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+          }
+        }
+      });
+    }
+
+    function processExerciseData(sets, metric) {
+      const sessionData = {};
+      
+      sets.forEach(set => {
+        const date = new Date(set.created_at * 1000).toDateString();
+        
+        if (!sessionData[date]) {
+          sessionData[date] = { weight: 0, power: 0, count: 0 };
+        }
+        
+        if (metric === 'weight' && set.weight) {
+          sessionData[date].weight = Math.max(sessionData[date].weight, set.weight);
+        } else if (metric === 'power' && set.reps) {
+          const validReps = set.reps.filter(r => !set.error?.ghost_rep_indices?.includes(set.reps.indexOf(r)));
+          validReps.forEach(rep => {
+            let power = 0;
+            if (rep.concentric_peak_power_per_mass_z) {
+              power = (rep.concentric_peak_power_per_mass_z * 9.81 * set.weight) / 2.205;
+            } else if (rep.concentric_mean_velocity_z) {
+              power = (rep.concentric_mean_velocity_z * 9.81 * set.weight) / 2.205;
+            }
+            if (power > sessionData[date].power) {
+              sessionData[date].power = power;
+            }
+          });
+        }
+      });
+      
+      return Object.entries(sessionData)
+        .map(([date, values]) => ({
+          x: new Date(date),
+          y: metric === 'weight' ? values.weight : values.power
+        }))
+        .sort((a, b) => a.x - b.x);
+    }
+  </script>
+</body>
+</html>

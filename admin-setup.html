@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Setup - Go Hornets</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .setup-box {
+      max-width: 600px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 40px;
+      border-radius: 20px;
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    h1 {
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #888;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    button {
+      padding: 15px 30px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: 700;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    }
+    .success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    .success.visible {
+      display: block;
+    }
+    .info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .code {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      margin: 15px 0;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-box">
+    <h1>🐝 Admin Account Setup</h1>
+    <p>Click the button below to automatically create your admin account with the following credentials:</p>
+    
+    <div class="info">
+      <strong style="color: #d4af37;">Email:</strong> aespinoza@savcds.org<br>
+      <strong style="color: #d4af37;">Password:</strong> SCDpower!1<br>
+      <strong style="color: #d4af37;">Admin:</strong> Yes
+    </div>
+
+    <button onclick="setupAdmin()">🔧 Create Admin Account</button>
+
+    <div class="success" id="successMessage">
+      <h3 style="color: #22c55e; margin-top: 0;">✅ Success!</h3>
+      <p>Your admin account has been created. You can now:</p>
+      <ol style="margin: 10px 0;">
+        <li>Go to the login page (index.html)</li>
+        <li>Enter your email: aespinoza@savcds.org</li>
+        <li>Enter your password: SCDpower!1</li>
+        <li>Access the full admin dashboard</li>
+      </ol>
+      <button onclick="window.location.href='index.html'" style="margin-top: 20px;">
+        Go to Login
+      </button>
+    </div>
+  </div>
+
+  <script>
+    async function setupAdmin() {
+      try {
+        const password = 'SCDpower!1';
+        
+        // Hash the password
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Create admin account
+        const adminAccount = {
+          id: null, // Will be set when they select from Perch, or can manually match
+          firstName: 'Shirek',
+          lastName: 'Espinoza Andrew',
+          email: 'aespinoza@savcds.org',
+          passwordHash: passwordHash,
+          inviteToken: null,
+          admin: true,
+          active: true,
+          createdAt: Date.now(),
+          setupCompletedAt: Date.now()
+        };
+
+        // Load existing credentials
+        let credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
+        
+        // Check if admin already exists
+        const existingIndex = credentials.findIndex(c => c.email === adminAccount.email);
+        if (existingIndex !== -1) {
+          // Update existing
+          credentials[existingIndex] = adminAccount;
+        } else {
+          // Add new
+          credentials.push(adminAccount);
+        }
+
+        // Save to localStorage
+        localStorage.setItem('athlete_credentials', JSON.stringify(credentials));
+
+        // Show success message
+        document.getElementById('successMessage').classList.add('visible');
+        
+        console.log('Admin account created successfully!');
+        console.log('Email: aespinoza@savcds.org');
+        console.log('Password: SCDpower!1');
+      } catch (error) {
+        console.error('Error creating admin account:', error);
+        alert('Error creating admin account. Please check the console.');
+      }
+    }
+  </script>
+</body>
+</html>

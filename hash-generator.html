@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Hash Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #2d2d2d;
+      border: 1px solid #444;
+      color: #fff;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #22c55e;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #2d2d2d;
+      border: 1px solid #444;
+      word-break: break-all;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Password Hash Generator</h1>
+  <p>Enter your password to generate its SHA-256 hash:</p>
+  <input type="password" id="password" placeholder="Enter password">
+  <button onclick="generateHash()">Generate Hash</button>
+  <div id="result"></div>
+
+  <script>
+    async function generateHash() {
+      const password = document.getElementById('password').value;
+      if (!password) {
+        alert('Please enter a password');
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      document.getElementById('result').innerHTML = `
+        <strong>Password:</strong> ${password}<br><br>
+        <strong>SHA-256 Hash:</strong><br>${hashHex}<br><br>
+        <button onclick="navigator.clipboard.writeText('${hashHex}')">Copy Hash</button>
+      `;
+    }
+
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') generateHash();
+    });
+  </script>
+</body>
+</html>

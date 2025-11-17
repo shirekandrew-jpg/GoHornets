@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Your Account - Go Hornets</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .setup-container {
+      max-width: 500px;
+      margin: 60px auto;
+      padding: 40px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .setup-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .setup-header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .setup-header p {
+      color: #888;
+      font-size: 0.95em;
+    }
+
+    .athlete-info {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    .athlete-info p {
+      color: #22c55e;
+      margin: 5px 0;
+    }
+
+    .athlete-info strong {
+      color: #d4af37;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #d4af37;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1em;
+      font-family: 'Inter', sans-serif;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #d4af37;
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+
+    .password-requirements {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 0.85em;
+    }
+
+    .password-requirements p {
+      color: #3b82f6;
+      margin: 5px 0;
+    }
+
+    .requirement {
+      color: #888;
+      margin: 5px 0;
+    }
+
+    .requirement.met {
+      color: #22c55e;
+    }
+
+    .requirement::before {
+      content: '○ ';
+    }
+
+    .requirement.met::before {
+      content: '✓ ';
+    }
+
+    .setup-button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: 700;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .setup-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    }
+
+    .setup-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      display: none;
+      margin-bottom: 20px;
+    }
+
+    .error-message.visible {
+      display: block;
+    }
+
+    .success-message {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-message.visible {
+      display: block;
+    }
+
+    .success-message h2 {
+      color: #22c55e;
+      margin-bottom: 15px;
+    }
+
+    .login-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #22c55e 0%, #d4af37 100%);
+      color: #000;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+
+    .login-link:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div class="setup-header">
+      <h1>🐝 Welcome!</h1>
+      <p>Set up your athlete portal account</p>
+    </div>
+
+    <div id="setupForm">
+      <div class="error-message" id="errorMessage"></div>
+
+      <div class="athlete-info" id="athleteInfo" style="display: none;">
+        <p><strong>Name:</strong> <span id="athleteName"></span></p>
+        <p><strong>Email:</strong> <span id="athleteEmail"></span></p>
+      </div>
+
+      <form id="passwordForm">
+        <div class="form-group">
+          <label for="password">Create Password</label>
+          <input type="password" id="password" required placeholder="Enter a strong password">
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" required placeholder="Re-enter your password">
+        </div>
+
+        <div class="password-requirements">
+          <p style="font-weight: 600; margin-bottom: 10px;">Password Requirements:</p>
+          <div class="requirement" id="req-length">At least 8 characters</div>
+          <div class="requirement" id="req-uppercase">At least one uppercase letter</div>
+          <div class="requirement" id="req-lowercase">At least one lowercase letter</div>
+          <div class="requirement" id="req-number">At least one number</div>
+        </div>
+
+        <button type="submit" class="setup-button" id="setupButton" disabled>
+          Create Account
+        </button>
+      </form>
+    </div>
+
+    <div class="success-message" id="successMessage">
+      <h2>✅ Account Created Successfully!</h2>
+      <p>Your athlete portal account is now active.</p>
+      <a href="index.html" class="login-link">Go to Login</a>
+    </div>
+  </div>
+
+  <script>
+    let athleteData = null;
+    let inviteToken = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Get token from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      inviteToken = urlParams.get('token');
+
+      if (!inviteToken) {
+        showError('Invalid or missing invite link. Please contact your coach.');
+        return;
+      }
+
+      // Load athlete data from token
+      loadAthleteFromToken();
+
+      // Add password validation
+      const password = document.getElementById('password');
+      const confirmPassword = document.getElementById('confirmPassword');
+
+      password.addEventListener('input', validatePassword);
+      confirmPassword.addEventListener('input', validatePassword);
+    });
+
+    function loadAthleteFromToken() {
+      const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
+      athleteData = credentials.find(a => a.inviteToken === inviteToken);
+
+      if (!athleteData) {
+        showError('Invalid invite link. Please contact your coach for a new invite.');
+        return;
+      }
+
+      if (athleteData.passwordHash) {
+        showError('This account has already been set up. Please use the login page.');
+        return;
+      }
+
+      // Display athlete info
+      document.getElementById('athleteName').textContent = `${athleteData.firstName} ${athleteData.lastName}`;
+      document.getElementById('athleteEmail').textContent = athleteData.email;
+      document.getElementById('athleteInfo').style.display = 'block';
+    }
+
+    function validatePassword() {
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const button = document.getElementById('setupButton');
+
+      // Check requirements
+      const requirements = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password)
+      };
+
+      // Update UI
+      document.getElementById('req-length').classList.toggle('met', requirements.length);
+      document.getElementById('req-uppercase').classList.toggle('met', requirements.uppercase);
+      document.getElementById('req-lowercase').classList.toggle('met', requirements.lowercase);
+      document.getElementById('req-number').classList.toggle('met', requirements.number);
+
+      // Enable button if all requirements met and passwords match
+      const allMet = Object.values(requirements).every(v => v);
+      const passwordsMatch = password === confirmPassword && password.length > 0;
+      button.disabled = !(allMet && passwordsMatch);
+
+      // Show error if passwords don't match
+      if (confirmPassword.length > 0 && !passwordsMatch) {
+        showError('Passwords do not match');
+      } else {
+        hideError();
+      }
+    }
+
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password !== confirmPassword) {
+        showError('Passwords do not match');
+        return;
+      }
+
+      try {
+        // Hash password (simple hash for demo - in production use proper bcrypt)
+        const passwordHash = await hashPassword(password);
+
+        // Update athlete data
+        const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
+        const index = credentials.findIndex(a => a.inviteToken === inviteToken);
+
+        if (index !== -1) {
+          credentials[index].passwordHash = passwordHash;
+          credentials[index].setupCompletedAt = Date.now();
+          localStorage.setItem('athlete_credentials', JSON.stringify(credentials));
+
+          // Show success
+          document.getElementById('setupForm').style.display = 'none';
+          document.getElementById('successMessage').classList.add('visible');
+        } else {
+          showError('Error setting up account. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error creating account:', error);
+        showError('An error occurred. Please try again.');
+      }
+    });
+
+    async function hashPassword(password) {
+      // Simple hash using Web Crypto API
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('errorMessage');
+      errorEl.textContent = message;
+      errorEl.classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('errorMessage').classList.remove('visible');
+    }
+  </script>
+</body>
+</html>
