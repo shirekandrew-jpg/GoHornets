@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Current Hornet Leaders</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1017,7 +1018,7 @@
         
         const userStat = userStats.get(set.user_id);
         
-        // Check set-level jump height data first
+        // Check set-level jump height data (already in inches)
         const setJumpHeight = set.max_jump_height || set.avg_jump_height || null;
         console.log(`Set ${set.id} jump height data: max=${set.max_jump_height}, avg=${set.avg_jump_height}, setJumpHeight=${setJumpHeight}`);
         
@@ -1027,31 +1028,10 @@
           console.log(`${exerciseName} - Set-level jump height: ${setJumpHeight} in for user ${userInfo.name}`);
         }
         
-        // Process individual reps if available
+        // Count reps for stats tracking only (don't process individual reps for vertical jump)
         if (set.reps && Array.isArray(set.reps) && set.reps.length > 0) {
           setsWithReps++;
-          const validReps = getValidReps(set);
-          
-          validReps.forEach(rep => {
-            totalRepsProcessed++;
-            
-            // For reps, we might need to use set-level jump height since reps don't have individual jump heights
-            // But check if the rep has displacement data we can use
-            let repJumpHeight = null;
-            
-            if (rep.concentric_disp_z) {
-              // Convert displacement to jump height (assuming meters to inches)
-              repJumpHeight = Math.abs(rep.concentric_disp_z) / 0.0254; // meters to inches
-            } else if (setJumpHeight) {
-              // Use set-level jump height as fallback
-              repJumpHeight = setJumpHeight;
-            }
-            
-            if (repJumpHeight && repJumpHeight > userStat.maxJumpHeight) {
-              userStat.maxJumpHeight = repJumpHeight;
-              repsWithJumpData++;
-            }
-          });
+          totalRepsProcessed += getValidReps(set).length;
         }
       });
       
@@ -1170,6 +1150,8 @@
         const trapBarData = processLeaderboardData(trapBarSets, 'Trap Bar Deadlift');
         renderLeaderboard(trapBarData, 'trapBarMeanPowerTableBody', 'maxMeanPower', 'W');
         renderLeaderboard(trapBarData, 'trapBarWeightTableBody', 'maxWeight', 'lbs');
+      } else {
+        console.error('Trap Bar Deadlift exercise ID not available, skipping data load');
       }
       
       // Load Front Squat data
