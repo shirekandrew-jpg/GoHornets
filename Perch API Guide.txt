@@ -1,0 +1,196 @@
+Introduction
+Welcome to the Perch API Guide. This document is intended to walk you through the API beyond just endpoint documentation. It isnít very long, but it should contain everything you need to know in order to successfully integrate. Please read it carefully and donít hesitate to ask questions!
+Basics
+Our API is a simple JSON based HTTP API. We do not adhere to the standard usage of HTTP methods the way a proper REST API might. As a result, almost every request made will be a POST request with a JSON body representing either filters by which you intend to query results or a payload to be used for creating or updating a record.
+
+For almost every integration weíve done to date, there has been no need to modify or write data via our API. If this is not the case for you, reach out to Perch directly as the API keys your customer generates will not have the correct permissions to do so.
+Endpoint Documentation
+Here is the documentation of the endpoints you will need to access:
+https://app.swaggerhub.com/apis-docs/PerchFitness/perch-api
+
+The above link does not contain a version number in the URL, and thus will redirect you to the most recent version. We would recommend you bookmark that link as is so that any time you visit the docs you will see the most recent version rather than whatever the latest version was at the time you bookmarked it.
+Changes
+Our change management for the API is quite strict, as we ourselves use our API internally on mobile devices which are not easily updated. As such, we never make breaking changes without appropriate versioning and support old API functionality for a relatively long time. 
+
+Whenever improvements are made to our API, or if ever we need to make a breaking change, we will notify integrators via email and allow ample time for migration.
+Terms
+? User - an individual user in Perch
+? Admin - a User with full read and write permissions over an organization
+? Coach - a User with full read permissions over an organization or part of it
+? Athlete - a User with only permission over themselves and their own data
+? Group - a grouping of users, examples: team, lifting group, organization
+? Organization - a specific type of Group at the top of a customerís hierarchy
+? Set - an individual workout set tracked on Perch
+? Exercise - an ìactivityî or ìmovementî definition, e.g. ìBack Squatî
+Getting Started
+Firstly, you need an API token. Perch customers can generate API tokens using the Perch web app as shown here. Ask your customer to generate a token and share it with you securely. If for some reason the Perch customer cannot generate a token for you, have them connect you with Perchís support team.
+
+The next thing you need to determine is the id of the Perch Organization youíre using. To get that id, you can make a simple GET request to the /v2/user endpoint and extract the id from the org_id field in the response payload. The response contains one of the Admin level users from the Organization in Perch, and they will each have the org_id field which corresponds to the id of the Organization.
+
+The id of the Organization will never change (this is true of all IDs in Perch), so this can be stored on your end and reused. As you move forward, you can supply this id to other endpoints in order to fetch data for the entire organization all at once.
+Core Concepts
+Authentication / Identity
+As mentioned above, authentication for the API is handled with API tokens. Refer to the above section to find out how to acquire one. Protect this token as if itís a password or SSH key. Your API token provides access to client data.
+
+API tokens generated in Perchís system are either associated with a specific User or a specific Organization. This is so that the API token can inherit permissions, with a caveat: API tokens are currently not allowed to perform any write operations, they are read-only. Thus, an API token has the read permissions of the associated entity, and not the write permissions.
+
+As of writing, all customer generated tokens are associated with their Organization. When a token is associated with an Organization, the token can read Users and data from the entire Organization. This simplifies integration, as one API token can be used to access all data within the Organization and the token is not tied to any single User account.
+
+To authenticate with the API, add an HTTP Header to each request of this form:
+
+?Authorization: Bearer <your token here>
+?
+The API tokens never expire, so certainly be careful with their storage. If ever you are worried that a token has been leaked, you can ask the customer for which the token is issued to delete the token, which will revoke its access, and create a new one. Do not hesitate to reach out to Perch for assistance.
+Time Base Filtering
+Our core endpoints return data in bulk with paging, but it can be helpful to filter for specific time ranges. We use a consistent pattern across endpoints to accomplish this.
+
+The two fields in the request you will want to use are begin_time and end_time. Both are expected to be floating point Unix timestamps. You can supply either one on its own or both parameters. The effect of supplying these parameters is to filter objects which were created in the half-open interval [begin_time, end_time). If you omit begin_time, all data whose timestamp falls before end_time are returned. If you omit end_time, all data with timestamps at or after begin_time are returned.
+Paging
+Most of Perchís endpoints that return bulk data perform cursor based paging. The response will always container a structure as follows:
+
+?{
+    ìdataî: [...],
+    ìnext_tokenî: <string or null>,
+    ìtruncatedî: <true or false>
+}
+?
+The data key will hold an array of the individual objects returned, and the value of the other fields depends on the number of records that the API found. If there were more than one pageís worth of records, truncated will be true and next_token will contain a string. Otherwise, truncated will be false and next_token will be null.
+
+To get the next page of results, you simply need to pass the next_token received on the previous request into the JSON body of a new request (with the rest of the parameters the same). Repeat this until either the truncated boolean changes to false or the next_token is null.
+Related Objects
+In many circumstances it is useful to have related objects attached to the ones youíre working with. The primary example within the Perch API is having the Exercise object associated with a Set.
+
+Where possible, an additional refs field will be provided in the response payload. Everywhere this pattern is used is documented in the API endpoint documentation. This field will hold useful objects, organized by type, with relations to the core data being returned.
+
+The structure of refs is common amongst all endpoints using it. refs is a JSON Object, holding string keys with logical names which map to Arrays of Objects. The keys denoting the type of data contained in the Arrays nested thereunder. The Arrays contain only the unique referenced objects. For instance, if you request Sets from the Set API Endpoint, many Set objects will refer to the same Exercise. As such, only one copy of each referenced Exercise will be present in the list under refs -> exercises. Below is an example using the Set response to help explain, which not only contains Exercise objects in the refs field, but also User objects:
+
+?{
+    "data": [
+        {
+            "id": 1,
+            "user_id": 2,
+            "exercise_id": 3,
+            ... omitted fields ...
+        }
+    ],
+    "refs": {
+        "exercises": [
+            {
+                "id": 3,
+                "name": "Bench Press"
+                ... omitted fields ...
+            }
+        ],
+        "users": [
+            {
+                "id": 2,
+                "first_name": "John"
+                ... omitted fields ...
+            }
+        ],
+    }
+}
+?
+The pattern being followed here in this example (and in other endpoints) is that if the core data type (Set in this case) has the fields exercise_id and user_id, there would be both an exercises and a users key inside of the refs structure holding lists of the respective, unique objects referenced by the core data type.
+Rate Limits
+The API returns HTTP Status Code 429 when you are getting rate limited. We have different rate limits on different endpoints, and if youíre not doing anything strange we donít expect you to butt up against them.
+
+In all likelihood, our infrastructure can handle what youíre going to throw at it. Fetching data daily, or even every 15 minutes should not be a problem. The only situation we want to avoid is tens or hundreds of extra requests per second, which is why the rate limits exist.
+
+With all that said, please be kind.
+Mapping Your Users
+Users in Perch have an id field which will never change and can be used forever as reference to the User.
+
+To fetch all the users in the organization, use the /v2/users endpoint with the group_id parameter set to the Organizationís id we retrieved earlier. The response will contain one page of users, with potentially more to follow.
+
+These User objects can be mapped to users in your system however you like. Common choices are email address or name. Once youíve mapped the users using one of these other fields, we recommend you store the Perch Userís id as a ìforeign idî since that will never change.
+Exercises
+Perchís database of Exercises is a mixture of ìdefaultî Exercises controlled by Perch and updated infrequently and customer generated Exercises which can be modified at any time. As a result, you will want to regularly synchronize Exercises from Perch with your system.
+Global vs Customer Specific
+The Exercises Perch maintains are those with org_id = null, and are accessible to any customer organization in Perch. No matter which API token is used to request exercises, these ìglobalî Exercises will be included in the response.
+
+Those Exercises with org_id = <some id> are only accessible by the Organization in question.
+
+When you request Exercises from /v3/exercises, you will receive all the Exercises that fall into both categories:
+- Exercises that are global (org_id = null)
+- Exercises that are specific to the Customer youíre requesting on behalf of (org_id = <customer org_id>)
+
+It is worth noting that this means you will receive different results when requesting using different API tokens.
+Sets
+Set objects are the main data you will want to pull into your system. Each time a user performs an activity on Perch, a new Set is created as a record of that. Setís can be fetched much the same as other types: POST to /v3/sets, and add the parameter group_id = <Organizationís id> to get all sets for the Organization.
+
+The Set object has numerous fields holding statistics and rich data about the activity performed, but the most important fields are the following:
+? id - the unique identifier for the Set (never changes)
+? user_id - the id of the User who performed the Set
+? exercise_id - the id of the Exercise which was performed
+? start_time - the time when the Set began
+? error - details about any errors that occurred during the recording of this Set or null if there were none.
+Types of Sets: tracked vs untracked
+There are two distinct types of Sets, those that were tracked using a Perch camera and those that were entered manually.
+
+The default behavior of our old /v2/sets was to EXCLUDE untracked sets. The default behavior of the /v3/sets is to INCLUDE them. You can opt out of receiving untracked sets by specifying untracked = EXCLUDE.
+
+Tracked Sets will have the vast majority of the fields documented on the Set type filled in with non-null values. These sets were captured using a Perch camera, and therefore have rich statistics.
+
+Untracked Sets will be very sparse compared to Tracked Sets. The same core fields exist on Untracked Sets (user_id, exercise_id, etc.), but none of the statistics available for a set captured using the Perch camera system will be available. The two primary fields available are:
+? num_reps
+? weight
+Unit Conversions
+Every attribute of the Set object is documented in the ìSchemaî Section at the bottom of our documentation page. The units for many of the attributes will not be the units in which you will want to work with the statistics.
+
+In the documentation, each attribute is labeled with its unit, and more importantly an equation for converting it to the commonly desired unit. For example:
+
+avg_mean_velocity: number($in / s)
+                   		example: 31.316
+The mean of Rep.concentric_mean_velocity_z across all reps. Convert to m/s: m/in * avg_mean_velocity
+
+At the end of the description is the equation for converting avg_mean_velocity from inches per second to meters per second. The term m/in represents the number of meters per inch, which is a constant: 0.0254. As such, using the example value, if you have avg_mean_velocity equal to 31.316 in/s, converting it to m/s is as simple as 31.316 * 0.0254 = ~0.795 m/s.
+
+Some of the conversion equations are more complex than this example, but at the end of the day they will involve the same process of inserting the correct constants and multiplying them with the statistic from the Set.
+Data Modification
+Sets are the most critical data type to synchronize between systems, and making sure the data is in sync is important.
+
+Manual data entry on the weight room floor is error prone. Saving a Set with the wrong weight, user, or exercise is relatively common. As such, we allow users to modify sets after they have been saved to correct errors of this nature.
+
+In order to make sure your system always has correct data, we strongly recommend implementing something to handle situations like the following:
+1. User saves a Set, id = 1
+2. Integrator pulls Set 1 into 3rd party system
+3. User notices an error, and changes the weight
+4. Set 1 is now out of sync in the two systems
+
+To mitigate this problem, we recommend your choose one of the following approaches:
+1. If youíre pulling data regularly throughout hours when data will be generated, you should implement a ìlookbackî time. For instance, if youíre pulling data every hour, you might consider pulling the last 1.5 hours of data every hour so you can update any Set objects that were changed after you pulled them.
+2. Only ever pull data during off hours when users have had ample time to correct errors.
+Set vs Rep Level Statistics
+Perch collects a variety of statistics for each repetition of a Set. In your integration, you may or may not want such granular data. As a result, we have parameters in the API requests that allow you to opt into more granular data if you so desire.
+
+When using our latest endpoint to retrieve Sets, the default behavior is to exclude the reps array from the Set objects returned as this information is quite granular and often unnecessary. Most of the time, your needs might be met with the synthesized data present on the Set. For example if you want only the Setís average and maximum value for ìMean Velocityî, you can refer directly to avg_mean_velocity and max_mean_velocity respectively. Many statistics have such synthesized values, see the Set type in our endpoint documentation.
+Accessing Rep Statistics
+To have the raw repetition data returned from the Set endpoint, be sure to set the include_reps = true. This will give you access to the reps field, which contains the most granular data Perch provides.
+Migration from /v2/exercises to /v3/exercises
+The only change between these endpoints is that more types of exercises will be returned to you. These exercises are not substantially different from the others, so this should be a very minor migration.
+Migration from /v2/sets to /v3/sets
+The core changes between the /v2/sets and /v3/sets endpoints revolve around default behavior and the inclusion of referenced objects.
+Breaking Changes
+- Omission of reps and the removal of the no_reps parameter
+- By default, the reps field on Set is no longer included. To continue receiving reps on the sets returned to you, use the include_reps field to opt in by setting it to true
+- The endpoint no longer allows you to opt out of receiving the reps field on sets using the no_reps parameter. The default behavior is to omit the reps field in the response.
+- Untracked sets 
+- The v3 endpoint includes Untracked Sets by default in the response.
+- See the section ìTypes of Setsî for more information
+- To opt out of receiving any Untracked Sets, set the untracked parameter equal to EXCLUDE to have them removed from the response
+- clean_reps
+- This parameter tells the endpoint whether or not you would like any ìGhost repsî removed from the list of reps on a Set. The default value for clean_reps has changed to true
+- Nested data removed
+- In responses from the /v2/sets endpoint, there were two nested objects present on each Set: user and exercise. These nested objects will no longer be present in /v3/sets and instead will be present in the refs field of the response (as described above)
+The reps field and Error handling
+Do you still need to use reps?
+The reps field of Set holds an array of Rep objects. The reps hold granular and very raw data. Today, most integrations can find all the data they need using the ìsummaryî statistics preset on the Set itself and avoid parsing reps entirely (e.g. avg_mean_velocity and max_mean_velocity). See the documentation for these fields to understand more about how they are computed.
+If you do need reps, errors removed by default
+Perchís camera system is very good, but not perfect. Occasionally, Sets arenít tracked correctly and contain extra spurious reps.
+
+The default behavior of /v2/sets was to leave the extra reps in the reps list on a Set unless you specified clean_reps=true in your request. This behavior has now changed in /v3/sets: you no longer need to specify clean_reps=true, as that is the default behavior.
+
+If you were not ever utilizing the reps previously and had written code to parse the ghost_rep_indices from the Setís error field, you can safely remove that code and let the /v3/sets endpoint handle it for you (automatically).
+Final Notes
+If you notice any bugs or potential security issues with our API or documentation, please let us know promptly. Email us at support@perch.fit.
