@@ -803,7 +803,8 @@
             }
           }
           
-          if (power && (!exercise.power || power > exercise.power)) {
+          // Only count power if it's greater than 0
+          if (power && power > 0 && (!exercise.power || power > exercise.power)) {
             exercise.power = power;
           }
         });
@@ -860,6 +861,7 @@
           const maxValue = Math.max(...jumpHeights);
           const range = maxValue - minValue;
           const step = range > 0 ? range / 50 : 1;
+          console.log(`${gender.toUpperCase()} Vertical Jump - Min: ${minValue.toFixed(2)} in, Max: ${maxValue.toFixed(2)} in, Range: ${range.toFixed(2)} in`);
           ratingScales[gender]['Vertical Jump']['jumpHeight'] = { minValue, maxValue, step };
         } else {
           ratingScales[gender]['Vertical Jump']['jumpHeight'] = null;
@@ -1057,7 +1059,13 @@
 
     function updateRatingCard(prefix, rating, details) {
       document.getElementById(`${prefix}Score`).textContent = rating;
-      document.getElementById(`${prefix}Details`).textContent = details;
+      
+      // If N/A, show "No Reps Attempted", otherwise show the details
+      if (rating === 'N/A' || rating === 49) {
+        document.getElementById(`${prefix}Details`).textContent = 'No Reps Attempted';
+      } else {
+        document.getElementById(`${prefix}Details`).textContent = details;
+      }
       
       // Update progress bar (handle both numeric ratings and 'N/A')
       if (rating === 'N/A' || rating === 49) {
