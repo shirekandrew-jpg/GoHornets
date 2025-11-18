@@ -695,6 +695,7 @@
 
       // Process exercise data
       const exerciseProgress = calculateExerciseProgress(athleteSets);
+      console.log('Exercise progress calculated:', exerciseProgress);
       
       // Display all exercise progress
       displayAllExercisesProgress(exerciseProgress);
@@ -1058,11 +1059,15 @@
       const container = document.getElementById('allExercisesProgress');
       container.innerHTML = '';
 
+      console.log('displayAllExercisesProgress called with:', progress);
+
       // Get all exercises that have data
       const exercisesWithData = Object.keys(progress).filter(exerciseName => {
         const data = progress[exerciseName];
         return data.sessions && data.sessions.length > 0;
       });
+
+      console.log(`Found ${exercisesWithData.length} exercises with data:`, exercisesWithData);
 
       if (exercisesWithData.length === 0) {
         container.innerHTML = '<div class="no-data">No exercise data available</div>';
