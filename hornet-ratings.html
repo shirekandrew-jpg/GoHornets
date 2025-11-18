@@ -324,17 +324,12 @@
       <div id="loadingState" class="loading">Loading athletes and calculating ratings...</div>
       <div id="errorState" class="error" style="display: none;"></div>
 
-      <!-- Athlete Name Header -->
-      <h2 id="athleteNameHeader" style="text-align: center; color: #d4af37; font-size: 2em; margin: 20px 0; display: none;">
-        <span id="athleteNameText"></span>'s Hornet Rating
-      </h2>
-
       <!-- Rating Display -->
       <div id="ratingDisplay" style="display: none;">
         <!-- Overall Rating -->
         <div class="overall-rating">
           <div class="overall-score" id="overallScore">--</div>
-          <div class="overall-title">Overall Hornet Rating</div>
+          <div class="overall-title" id="overallTitle">Overall Hornet Rating</div>
         </div>
 
         <!-- Individual Rating Cards -->
@@ -1035,7 +1030,6 @@
       
       if (!userId) {
         document.getElementById('ratingDisplay').style.display = 'none';
-        document.getElementById('athleteNameHeader').style.display = 'none';
         return;
       }
       
@@ -1046,9 +1040,8 @@
     }
 
     function displayAthleteRatings(athlete) {
-      // Show athlete name
-      document.getElementById('athleteNameText').textContent = athlete.name;
-      document.getElementById('athleteNameHeader').style.display = 'block';
+      // Set athlete name in overall title
+      document.getElementById('overallTitle').textContent = `${athlete.name} Overall Hornet Rating`;
       
       // Show the rating display
       document.getElementById('ratingDisplay').style.display = 'block';
