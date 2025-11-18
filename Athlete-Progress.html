@@ -29,6 +29,10 @@
       flex-wrap: wrap;
     }
 
+    .athlete-selector.admin-only {
+      display: none !important;
+    }
+
     .athlete-dropdown {
       padding: 0.75rem 1.5rem;
       border-radius: 12px;
@@ -275,10 +279,10 @@
       </button>
     </div>
 
-    <h1 style="text-align: center; font-size: 2.5rem; font-weight: 800; color: var(--hornet-green); margin-bottom: 2rem;">📈 Athlete Progress</h1>
+    <h1 id="progressTitle" style="text-align: center; font-size: 2.5rem; font-weight: 800; color: var(--hornet-green); margin-bottom: 2rem;">📈 Athlete Progress</h1>
 
     <div class="progress-container">
-    <div class="athlete-selector">
+    <div class="athlete-selector admin-only" id="athleteSelector" style="display: none;">
       <select id="athleteDropdown" class="athlete-dropdown">
         <option value="">Select an Athlete</option>
       </select>
@@ -636,11 +640,22 @@
     }
 
     function populateAthleteDropdown() {
+      const session = getAthleteSession();
       const dropdown = document.getElementById('athleteDropdown');
       dropdown.innerHTML = '<option value="">Select an Athlete</option>';
       
+      // Show controls only if admin
+      if (session && session.isAdmin) {
+        document.getElementById('athleteSelector').style.display = 'flex';
+      }
+      
       // Only show active users in dropdown (but use all users for rating calculations)
-      const activeUsers = allUsers.filter(user => user.active === true);
+      let activeUsers = allUsers.filter(user => user.active === true);
+      
+      // If not admin, only show the logged-in athlete
+      if (session && !session.isAdmin) {
+        activeUsers = activeUsers.filter(user => user.id === session.id);
+      }
       
       activeUsers.forEach(user => {
         const option = document.createElement('option');
@@ -649,6 +664,12 @@
         option.textContent = name;
         dropdown.appendChild(option);
       });
+
+      // Auto-select if only one athlete (non-admin case or single athlete)
+      if (activeUsers.length === 1) {
+        dropdown.value = activeUsers[0].id;
+        displayAthleteProgress(activeUsers[0].id);
+      }
 
       dropdown.addEventListener('change', (e) => {
         const userId = parseInt(e.target.value);
@@ -663,6 +684,10 @@
     function displayAthleteProgress(userId) {
       const athlete = allUsers.find(u => u.id === userId);
       if (!athlete) return;
+
+      // Update title with athlete name
+      const athleteName = athlete.name || `${athlete.first_name || ''} ${athlete.last_name || ''}`.trim();
+      document.getElementById('progressTitle').textContent = `📈 ${athleteName} Athlete Progress`;
 
       document.getElementById('progressContent').classList.add('active');
       document.getElementById('noData').style.display = 'none';
