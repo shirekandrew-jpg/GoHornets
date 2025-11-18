@@ -1015,8 +1015,8 @@
         dropdown.appendChild(option);
       });
       
-      // Auto-select for non-admin users OR if only one athlete
-      if (activeAthletes.length === 1) {
+      // Auto-select first athlete for better UX
+      if (activeAthletes.length > 0 && !selectedAthlete) {
         dropdown.value = activeAthletes[0].user_id;
         selectAthlete();
       }

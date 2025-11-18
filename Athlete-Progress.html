@@ -665,8 +665,8 @@
         dropdown.appendChild(option);
       });
 
-      // Auto-select if only one athlete (non-admin case or single athlete)
-      if (activeUsers.length === 1) {
+      // Auto-select first athlete for better UX
+      if (activeUsers.length > 0 && !dropdown.value) {
         dropdown.value = activeUsers[0].id;
         displayAthleteProgress(activeUsers[0].id);
       }
