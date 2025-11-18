@@ -921,20 +921,21 @@
     function calculateExerciseProgress(athleteSets) {
       const progress = {};
 
-      Object.keys(EXERCISE_CONFIG).forEach(exerciseName => {
-        progress[exerciseName] = {
-          sessions: [], // Array of session objects with date, weight, meanPower, peakPower
-          best: { weight: null, meanPower: null, peakPower: null, height: null },
-          first: { weight: null, meanPower: null, peakPower: null, height: null }
-        };
-      });
-
       // Group sets by date for each exercise
       const sessionsByExercise = {};
       
       athleteSets.forEach(set => {
         const exerciseName = set.exercise_name;
-        if (!EXERCISE_CONFIG[exerciseName]) return;
+        if (!exerciseName) return;
+
+        // Initialize progress for this exercise if not already done
+        if (!progress[exerciseName]) {
+          progress[exerciseName] = {
+            sessions: [], // Array of session objects with date, weight, meanPower, peakPower
+            best: { weight: null, meanPower: null, peakPower: null, height: null },
+            first: { weight: null, meanPower: null, peakPower: null, height: null }
+          };
+        }
 
         if (!sessionsByExercise[exerciseName]) {
           sessionsByExercise[exerciseName] = {};
