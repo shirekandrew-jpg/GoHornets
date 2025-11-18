@@ -562,10 +562,8 @@
       }));
       const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?data=${athleteData}`;
       currentInviteLink = inviteLink;
-      document.getElementById('inviteLinkText').textContent = inviteLink;
-      document.getElementById('inviteLinkModal').classList.add('visible');
       
-      // Send email automatically
+      // Send email automatically (no modal popup)
       sendInviteEmail(email, newAthlete.firstName, newAthlete.lastName, inviteLink);
     });
 
