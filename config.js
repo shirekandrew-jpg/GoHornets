@@ -1,6 +1,6 @@
 // Configuration for different environments
 const CONFIG = {
-  // Production URL (GitHub Pages)
+  // Production URL (GitHub Pages) - note the /GoHornets path
   PRODUCTION_URL: 'https://shirekandrew-jpg.github.io/GoHornets',
   
   // Check if we're in production or local development
@@ -8,7 +8,11 @@ const CONFIG = {
   
   // Get the correct base URL
   getBaseURL() {
-    return this.isProduction ? this.PRODUCTION_URL : `http://localhost:3000`;
+    if (this.isProduction) {
+      // For GitHub Pages, use the current origin + pathname base
+      return window.location.origin + '/GoHornets';
+    }
+    return 'http://localhost:3000';
   },
   
   // Get email server URL (only works locally, production uses different method)
