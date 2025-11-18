@@ -3,7 +3,7 @@ const CONFIG = {
   // Production URL (GitHub Pages) - note the /GoHornets path
   PRODUCTION_URL: 'https://shirekandrew-jpg.github.io/GoHornets',
   
-  // Vercel serverless function URL (you'll update this after deploying)
+  // Vercel serverless function URL for auto-sending emails
   EMAIL_API_URL: 'https://go-hornets.vercel.app/api/send-invite',
   
   // Check if we're in production or local development
