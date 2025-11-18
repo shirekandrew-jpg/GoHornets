@@ -298,8 +298,8 @@
 
     <div class="ratings-container">
 
-      <!-- Gender Selection -->
-      <div class="gender-selector">
+      <!-- Gender Selection (Admin Only) -->
+      <div class="gender-selector admin-only" id="genderSelector" style="display: none;">
         <button class="gender-tab active" data-gender="male" onclick="switchGender('male')">
           Male Athletes
         </button>
@@ -308,9 +308,9 @@
         </button>
       </div>
 
-      <!-- Athlete Selection -->
-      <div class="athlete-selector">
-        <select class="athlete-dropdown" id="athleteSelector" onchange="selectAthlete()">
+      <!-- Athlete Selection (Admin Only) -->
+      <div class="athlete-selector admin-only" id="athleteSelector" style="display: none;">
+        <select class="athlete-dropdown" id="athleteDropdown" onchange="selectAthlete()">
           <option value="">Select an athlete...</option>
         </select>
       </div>
@@ -974,7 +974,7 @@
     }
 
     function updateAthleteDropdown() {
-      const dropdown = document.getElementById('athleteSelector');
+      const dropdown = document.getElementById('athleteDropdown');
       dropdown.innerHTML = '<option value="">Select an athlete...</option>';
       
       // Check if user is authenticated
@@ -983,6 +983,12 @@
         console.log('No session found, redirecting to login');
         window.location.href = 'index.html';
         return;
+      }
+      
+      // Show/hide admin controls
+      if (session.isAdmin) {
+        document.getElementById('genderSelector').style.display = 'flex';
+        document.getElementById('athleteSelector').style.display = 'flex';
       }
       
       // Filter athletes based on admin status
@@ -1004,7 +1010,7 @@
         dropdown.appendChild(option);
       });
       
-      // Auto-select if only one athlete (non-admin user)
+      // Auto-select for non-admin users OR if only one athlete
       if (activeAthletes.length === 1) {
         dropdown.value = activeAthletes[0].user_id;
         selectAthlete();
@@ -1014,7 +1020,7 @@
     }
 
     function selectAthlete() {
-      const dropdown = document.getElementById('athleteSelector');
+      const dropdown = document.getElementById('athleteDropdown');
       const userId = parseInt(dropdown.value);
       
       if (!userId) {
