@@ -3,6 +3,9 @@ const CONFIG = {
   // Production URL (GitHub Pages) - note the /GoHornets path
   PRODUCTION_URL: 'https://shirekandrew-jpg.github.io/GoHornets',
   
+  // Vercel serverless function URL (you'll update this after deploying)
+  EMAIL_API_URL: 'https://go-hornets.vercel.app/api/send-invite',
+  
   // Check if we're in production or local development
   isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
   
@@ -15,8 +18,13 @@ const CONFIG = {
     return 'http://localhost:3000';
   },
   
-  // Get email server URL (only works locally, production uses different method)
+  // Get email server URL
   getEmailServerURL() {
-    return this.isProduction ? null : 'http://localhost:3001';
+    if (this.isProduction) {
+      // In production, use Vercel serverless function
+      return this.EMAIL_API_URL;
+    }
+    // In local dev, try local email server first
+    return 'http://localhost:3001';
   }
 };

@@ -582,9 +582,9 @@
       try {
         const emailServerURL = CONFIG.getEmailServerURL();
         
-        // In production, use mailto fallback. In local dev, try email server first
+        // Try to send via serverless function (works in both local and production)
         if (emailServerURL) {
-          const response = await fetch(`${emailServerURL}/send-invite`, {
+          const response = await fetch(emailServerURL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -603,14 +603,17 @@
             alert(`✅ Invite email sent successfully to ${firstName} ${lastName} at ${email}!`);
             console.log('Email sent successfully');
             return;
+          } else {
+            console.error('Email API error:', result.error);
+            throw new Error(result.error || 'Email API failed');
           }
         }
         
-        // Fallback or production: use mailto
-        throw new Error('Using mailto fallback');
+        // No email server configured
+        throw new Error('No email server configured');
         
       } catch (error) {
-        console.log('Using mailto fallback:', error.message);
+        console.log('Email send failed, using mailto fallback:', error.message);
         // Fallback to mailto
         const subject = encodeURIComponent('Invitation to Hornet Athletics Portal');
         const body = encodeURIComponent(
@@ -624,9 +627,7 @@
         );
         
         window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
-        
-        const mode = CONFIG.isProduction ? 'Copy and send this invite link' : 'Email client opened - please send manually';
-        alert(`📧 ${mode}:\n${inviteLink}`);
+        alert(`📧 Email client opened. Please click Send to deliver the invite.`);
       }
     }
 
