@@ -30,7 +30,7 @@
     }
 
     .athlete-selector.admin-only {
-      display: none !important;
+      display: none;
     }
 
     .athlete-dropdown {
@@ -646,6 +646,7 @@
       
       // Show controls only if admin
       if (session && session.isAdmin) {
+        document.getElementById('athleteSelector').classList.remove('admin-only');
         document.getElementById('athleteSelector').style.display = 'flex';
       }
       

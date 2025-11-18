@@ -28,7 +28,7 @@
 
     .athlete-selector.admin-only,
     .gender-selector.admin-only {
-      display: none !important;
+      display: none;
     }
 
     .athlete-dropdown {
@@ -992,6 +992,8 @@
       
       // Show/hide admin controls
       if (session.isAdmin) {
+        document.getElementById('genderSelector').classList.remove('admin-only');
+        document.getElementById('athleteSelector').classList.remove('admin-only');
         document.getElementById('genderSelector').style.display = 'flex';
         document.getElementById('athleteSelector').style.display = 'flex';
       }
