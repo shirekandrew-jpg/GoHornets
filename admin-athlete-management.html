@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@sendgrid/mail@7.7.0/lib/mail.min.js"></script>
   <style>
     .admin-container {
       max-width: 1200px;
@@ -365,10 +366,14 @@
     </div>
   </div>
 
+  <script src="config.js"></script>
   <script>
     const API_BASE = 'https://api.perch.fit/v2';
     const ORG_ID = 7617;
     const TOKEN = '31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
+    const SENDGRID_API_KEY = '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';
+    const FROM_EMAIL = 'aespinoza@savcds.org'; // Your verified sender email
+    const FROM_NAME = 'Hornet Athletics Portal';
 
     let perchAthletes = [];
     let athleteCredentials = [];
@@ -545,11 +550,15 @@
       renderTable();
       hideModal();
 
-      // Show invite link
-      const inviteLink = `${window.location.origin}/athlete-setup.html?token=${inviteToken}`;
+      // Show invite link and send email
+      // Use dynamic URL based on environment
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${inviteToken}`;
       currentInviteLink = inviteLink;
       document.getElementById('inviteLinkText').textContent = inviteLink;
       document.getElementById('inviteLinkModal').classList.add('visible');
+      
+      // Send email automatically
+      sendInviteEmail(email, newAthlete.firstName, newAthlete.lastName, inviteLink);
     });
 
     function generateInviteToken() {
@@ -560,15 +569,70 @@
 
     function resendInvite(index) {
       const athlete = athleteCredentials[index];
-      const inviteLink = `${window.location.origin}/athlete-setup.html?token=${athlete.inviteToken}`;
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${athlete.inviteToken}`;
       currentInviteLink = inviteLink;
       document.getElementById('inviteLinkText').textContent = inviteLink;
       document.getElementById('inviteLinkModal').classList.add('visible');
+      
+      // Send email
+      sendInviteEmail(athlete.email, athlete.firstName, athlete.lastName, inviteLink);
+    }
+
+    async function sendInviteEmail(email, firstName, lastName, inviteLink) {
+      try {
+        const emailServerURL = CONFIG.getEmailServerURL();
+        
+        // In production, use mailto fallback. In local dev, try email server first
+        if (emailServerURL) {
+          const response = await fetch(`${emailServerURL}/send-invite`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email,
+              firstName,
+              lastName,
+              inviteLink
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            alert(`✅ Invite email sent successfully to ${firstName} ${lastName} at ${email}!`);
+            console.log('Email sent successfully');
+            return;
+          }
+        }
+        
+        // Fallback or production: use mailto
+        throw new Error('Using mailto fallback');
+        
+      } catch (error) {
+        console.log('Using mailto fallback:', error.message);
+        // Fallback to mailto
+        const subject = encodeURIComponent('Invitation to Hornet Athletics Portal');
+        const body = encodeURIComponent(
+          `Hi ${firstName},\n\n` +
+          `You've been invited to access the Hornet Athletics Portal!\n\n` +
+          `Click the link below to set up your account:\n` +
+          `${inviteLink}\n\n` +
+          `This link is unique to you and can only be used once.\n\n` +
+          `Best regards,\n` +
+          `Hornet Athletics Team`
+        );
+        
+        window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+        
+        const mode = CONFIG.isProduction ? 'Copy and send this invite link' : 'Email client opened - please send manually';
+        alert(`📧 ${mode}:\n${inviteLink}`);
+      }
     }
 
     function copyInviteLink(index) {
       const athlete = athleteCredentials[index];
-      const inviteLink = `${window.location.origin}/athlete-setup.html?token=${athlete.inviteToken}`;
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${athlete.inviteToken}`;
       
       navigator.clipboard.writeText(inviteLink).then(() => {
         alert('Invite link copied to clipboard!');

@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
   <style>
     /* Rating card styling */
     .ratings-container {
@@ -976,10 +977,25 @@
       const dropdown = document.getElementById('athleteSelector');
       dropdown.innerHTML = '<option value="">Select an athlete...</option>';
       
-      // Only show active athletes in dropdown
-      const activeAthletes = allRatings.filter(athlete => 
+      // Check if user is authenticated
+      const session = getAthleteSession();
+      if (!session) {
+        console.log('No session found, redirecting to login');
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      // Filter athletes based on admin status
+      let activeAthletes = allRatings.filter(athlete => 
         athlete.active === true && athlete.gender === currentGender
-      ).sort((a, b) => a.name.localeCompare(b.name));
+      );
+      
+      // If not admin, only show the logged-in athlete
+      if (!session.isAdmin) {
+        activeAthletes = activeAthletes.filter(athlete => athlete.user_id === session.id);
+      }
+      
+      activeAthletes.sort((a, b) => a.name.localeCompare(b.name));
       
       activeAthletes.forEach(athlete => {
         const option = document.createElement('option');
@@ -987,6 +1003,12 @@
         option.textContent = athlete.name;
         dropdown.appendChild(option);
       });
+      
+      // Auto-select if only one athlete (non-admin user)
+      if (activeAthletes.length === 1) {
+        dropdown.value = activeAthletes[0].user_id;
+        selectAthlete();
+      }
       
       console.log(`Updated dropdown with ${activeAthletes.length} active ${currentGender} athletes`);
     }
@@ -1135,6 +1157,11 @@
     // Initialize the page
     async function initializePage() {
       try {
+        // Check authentication first
+        if (!requireAthleteAuth()) {
+          return; // Will redirect to login
+        }
+        
         console.log('Initializing Hornet Ratings page...');
         
         // Start continuous 30-second progress animation
