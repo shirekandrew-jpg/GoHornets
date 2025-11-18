@@ -76,11 +76,11 @@ export default async function handler(req, res) {
               <div class="content">
                 <p>Hi ${firstName},</p>
                 <p>You've been invited to access the Hornet Athletics Portal! This is your personal dashboard to track your athletic performance and progress.</p>
-                <p>Click the button below to set up your account and create your password:</p>
-                <center>
-                  <a href="${inviteLink}" class="button" style="display: inline-block; padding: 15px 30px; background: #22c55e; color: #fff !important; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Set Up My Account</a>
-                </center>
-                <p>Or copy and paste this link into your browser:</p>
+                <p><strong>Click the link below to set up your account and create your password:</strong></p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${inviteLink}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 15px 30px; background-color: #22c55e; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Set Up My Account</a>
+                </p>
+                <p>If the button doesn't work, copy and paste this link into your browser:</p>
                 <p style="background: #fff; padding: 10px; border-radius: 5px; word-break: break-all;">
                   ${inviteLink}
                 </p>
