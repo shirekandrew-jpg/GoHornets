@@ -1,5 +1,6 @@
 // Vercel Serverless Function to send emails via SendGrid
 // This runs on Vercel's servers, not in the browser
+// Updated: Button styles added inline for email client compatibility
 
 export default async function handler(req, res) {
   // Enable CORS for all origins
