@@ -551,8 +551,16 @@
       hideModal();
 
       // Show invite link and send email
-      // Use dynamic URL based on environment
-      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${inviteToken}`;
+      // Encode athlete data in URL so it works on any computer
+      const athleteData = btoa(JSON.stringify({
+        id: newAthlete.id,
+        firstName: newAthlete.firstName,
+        lastName: newAthlete.lastName,
+        email: newAthlete.email,
+        admin: newAthlete.admin,
+        token: inviteToken
+      }));
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?data=${athleteData}`;
       currentInviteLink = inviteLink;
       document.getElementById('inviteLinkText').textContent = inviteLink;
       document.getElementById('inviteLinkModal').classList.add('visible');
@@ -569,7 +577,15 @@
 
     function resendInvite(index) {
       const athlete = athleteCredentials[index];
-      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${athlete.inviteToken}`;
+      const athleteData = btoa(JSON.stringify({
+        id: athlete.id,
+        firstName: athlete.firstName,
+        lastName: athlete.lastName,
+        email: athlete.email,
+        admin: athlete.admin,
+        token: athlete.inviteToken
+      }));
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?data=${athleteData}`;
       currentInviteLink = inviteLink;
       document.getElementById('inviteLinkText').textContent = inviteLink;
       document.getElementById('inviteLinkModal').classList.add('visible');
@@ -633,7 +649,15 @@
 
     function copyInviteLink(index) {
       const athlete = athleteCredentials[index];
-      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?token=${athlete.inviteToken}`;
+      const athleteData = btoa(JSON.stringify({
+        id: athlete.id,
+        firstName: athlete.firstName,
+        lastName: athlete.lastName,
+        email: athlete.email,
+        admin: athlete.admin,
+        token: athlete.inviteToken
+      }));
+      const inviteLink = `${CONFIG.getBaseURL()}/athlete-setup.html?data=${athleteData}`;
       
       navigator.clipboard.writeText(inviteLink).then(() => {
         alert('Invite link copied to clipboard!');

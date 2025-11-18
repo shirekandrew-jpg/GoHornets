@@ -250,17 +250,38 @@
     let inviteToken = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Get token from URL
+      // Get encoded data from URL
       const urlParams = new URLSearchParams(window.location.search);
-      inviteToken = urlParams.get('token');
+      const encodedData = urlParams.get('data');
 
-      if (!inviteToken) {
+      if (!encodedData) {
         showError('Invalid or missing invite link. Please contact your coach.');
         return;
       }
 
-      // Load athlete data from token
-      loadAthleteFromToken();
+      try {
+        // Decode athlete data from URL
+        athleteData = JSON.parse(atob(encodedData));
+        inviteToken = athleteData.token;
+
+        // Check if already set up
+        const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
+        const existing = credentials.find(a => a.id === athleteData.id);
+        
+        if (existing && existing.passwordHash) {
+          showError('This account has already been set up. Please use the login page.');
+          return;
+        }
+
+        // Display athlete info
+        document.getElementById('athleteName').textContent = `${athleteData.firstName} ${athleteData.lastName}`;
+        document.getElementById('athleteEmail').textContent = athleteData.email;
+        document.getElementById('athleteInfo').style.display = 'block';
+      } catch (error) {
+        console.error('Error decoding invite data:', error);
+        showError('Invalid invite link. Please contact your coach for a new invite.');
+        return;
+      }
 
       // Add password validation
       const password = document.getElementById('password');
@@ -271,23 +292,8 @@
     });
 
     function loadAthleteFromToken() {
-      const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
-      athleteData = credentials.find(a => a.inviteToken === inviteToken);
-
-      if (!athleteData) {
-        showError('Invalid invite link. Please contact your coach for a new invite.');
-        return;
-      }
-
-      if (athleteData.passwordHash) {
-        showError('This account has already been set up. Please use the login page.');
-        return;
-      }
-
-      // Display athlete info
-      document.getElementById('athleteName').textContent = `${athleteData.firstName} ${athleteData.lastName}`;
-      document.getElementById('athleteEmail').textContent = athleteData.email;
-      document.getElementById('athleteInfo').style.display = 'block';
+      // This function is no longer needed but kept for compatibility
+      // Data now comes from URL parameter
     }
 
     function validatePassword() {
@@ -337,21 +343,37 @@
         // Hash password (simple hash for demo - in production use proper bcrypt)
         const passwordHash = await hashPassword(password);
 
-        // Update athlete data
-        const credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
-        const index = credentials.findIndex(a => a.inviteToken === inviteToken);
+        // Get or create credentials array
+        let credentials = JSON.parse(localStorage.getItem('athlete_credentials') || '[]');
+        
+        // Check if athlete already exists
+        const existingIndex = credentials.findIndex(a => a.id === athleteData.id);
+        
+        const athleteRecord = {
+          id: athleteData.id,
+          firstName: athleteData.firstName,
+          lastName: athleteData.lastName,
+          email: athleteData.email,
+          passwordHash: passwordHash,
+          inviteToken: inviteToken,
+          admin: athleteData.admin || false,
+          createdAt: existingIndex >= 0 ? credentials[existingIndex].createdAt : Date.now(),
+          setupCompletedAt: Date.now()
+        };
 
-        if (index !== -1) {
-          credentials[index].passwordHash = passwordHash;
-          credentials[index].setupCompletedAt = Date.now();
-          localStorage.setItem('athlete_credentials', JSON.stringify(credentials));
-
-          // Show success
-          document.getElementById('setupForm').style.display = 'none';
-          document.getElementById('successMessage').classList.add('visible');
+        if (existingIndex >= 0) {
+          // Update existing record
+          credentials[existingIndex] = athleteRecord;
         } else {
-          showError('Error setting up account. Please try again.');
+          // Add new record
+          credentials.push(athleteRecord);
         }
+        
+        localStorage.setItem('athlete_credentials', JSON.stringify(credentials));
+
+        // Show success
+        document.getElementById('setupForm').style.display = 'none';
+        document.getElementById('successMessage').classList.add('visible');
       } catch (error) {
         console.error('Error creating account:', error);
         showError('An error occurred. Please try again.');
