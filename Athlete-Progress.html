@@ -531,14 +531,9 @@
           const data = await response.json();
           const exercises = data.data || [];
           
-          const targetExercises = exercises.filter(ex => 
-            ex.name && Object.keys(EXERCISE_CONFIG).some(targetName => 
-              ex.name.toLowerCase().includes(targetName.toLowerCase())
-            )
-          );
-          
-          console.log(`Found ${targetExercises.length} target exercises`);
-          return targetExercises;
+          // Return ALL exercises, not just those in EXERCISE_CONFIG
+          console.log(`Found ${exercises.length} total exercises`);
+          return exercises.filter(ex => ex.name); // Only filter out exercises without names
         }
       } catch (error) {
         console.error('Error loading exercises:', error);
