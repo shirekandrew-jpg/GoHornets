@@ -10,6 +10,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="auth.js"></script>
+  <script>
+    // Load exercises configuration
+    let EXERCISES_CONFIG = [];
+    fetch('exercises.json')
+      .then(res => res.json())
+      .then(data => {
+        EXERCISES_CONFIG = data.exercises;
+      })
+      .catch(err => console.error('Failed to load exercises:', err));
+  </script>
   <style>
     /* Rating card styling */
     .ratings-container {
@@ -822,7 +832,10 @@
     // Calculate ratings for all athletes
     function calculateRatings(athleteMetrics) {
       const genders = ['male', 'female'];
-      const exercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump', 'Bench Press'];
+      // Get only exercises marked for Hornet Rating
+      const exercises = EXERCISES_CONFIG
+        .filter(ex => ex.hornetRating === true)
+        .map(ex => ex.name);
       const metrics = ['strength', 'power'];
       
       // Store rating scales for each gender/exercise/metric combination
