@@ -964,62 +964,30 @@ document.addEventListener('DOMContentLoaded', function() {
     return Math.floor(t / 1000);
   }
 
-  // Load tracked exercises (value = id) sorted A→Z - only those with sets in last 14 days
+  // Load all trackable exercises sorted alphabetically A→Z
   async function loadExercises() {
     try {
-      // First fetch all tracked exercises
+      // Fetch all tracked exercises
       const res = await fetch('https://api.perch.fit/v3/exercises', {
         headers: { 'Authorization': AUTH_HEADER, 'accept': 'application/json' }
       });
       const payload = await res.json();
       const allTracked = (payload.data || []).filter(e => e.tracked === true);
 
-      // Now fetch sets from last 14 days to see which exercises have recent data
-      const now = Math.floor(Date.now() / 1000);
-      const fourteenDaysAgo = now - (14 * 86400);
-
-      const setsBody = {
-        limit: 1000,
-        next_token: null,
-        group_id: ORG_ID,
-        begin_time: fourteenDaysAgo,
-        end_time: now,
-        untracked: 'EXCLUDE',
-        include_reps: false
-      };
-
-      const setsRes = await fetch('https://api.perch.fit/v3/sets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': AUTH_HEADER,
-          'accept': 'application/json'
-        },
-        body: JSON.stringify(setsBody)
-      });
-
-      if (!setsRes.ok) throw new Error(`sets fetch failed ${setsRes.status}`);
-      const setsPayload = await setsRes.json();
-      const recentSets = setsPayload.data || [];
-
-      // Get unique exercise ids from recent sets
-      const exerciseIdsWithRecent = new Set(recentSets.map(s => s.exercise_id));
-
-      // Filter exercises to only those with recent sets
-      const recentExercises = allTracked.filter(e => exerciseIdsWithRecent.has(e.id))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      // Sort alphabetically
+      allTracked.sort((a, b) => a.name.localeCompare(b.name));
 
       const select = document.getElementById('filterLift');
       select.innerHTML = '<option value="">All Lifts</option>';
 
-      recentExercises.forEach(e => {
+      allTracked.forEach(e => {
         const opt = document.createElement('option');
         opt.value = String(e.id);
         opt.textContent = e.name;
         select.appendChild(opt);
       });
 
-      console.log(`Loaded ${recentExercises.length} exercises with recent activity (last 14 days)`);
+      console.log(`Loaded ${allTracked.length} trackable exercises (alphabetically sorted)`);
     } catch (err) {
       console.error('loadExercises error', err);
     }
