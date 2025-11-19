@@ -22,42 +22,38 @@
 
   <main class="main-content">
     <section class="button-grid">
-      <button id="btn-active" class="nav-button admin-only" onclick="navigateWithHornets('active-leaderboards.html')" style="display: none;">
+      <button id="btn-active" class="nav-button admin-only" onclick="window.location.href='active-leaderboards.html'" style="display: none;">
         📊 Active Leaderboards
       </button>
 
-      <button id="btn-ratings" class="nav-button" onclick="navigateWithHornets('hornet-ratings.html')">
+      <button id="btn-ratings" class="nav-button" onclick="window.location.href='hornet-ratings.html'">
         ⭐ Hornet Ratings
       </button>
       
-      <button id="btn-progress" class="nav-button" onclick="navigateWithHornets('Athlete-Progress.html')">
+      <button id="btn-progress" class="nav-button" onclick="window.location.href='Athlete-Progress.html'">
         📈 Athlete Progress
       </button>
       
-      <button id="btn-current" class="nav-button" onclick="navigateWithHornets('current-hornet-leaders.html')">
+      <button id="btn-current" class="nav-button" onclick="window.location.href='current-hornet-leaders.html'">
         🏆 Current Hornet Leaders
       </button>
       
-      <button id="btn-alltime" class="nav-button" onclick="navigateWithHornets('all-time-hornet-leaders.html')">
+      <button id="btn-alltime" class="nav-button" onclick="window.location.href='all-time-hornet-leaders.html'">
         👑 All Time Hornet Leaders
       </button>
       
-      <button id="btn-data-check" class="nav-button admin-only" onclick="navigateWithHornets('data-check.html')" style="display: none;">
+      <button id="btn-data-check" class="nav-button admin-only" onclick="window.location.href='data-check.html'" style="display: none;">
         🔍 Data Check
       </button>
       
       <!-- Admin only button -->
-      <button id="btn-athlete-mgmt" class="nav-button admin-only" onclick="navigateWithHornets('admin-athlete-management.html')" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); display: none;">
+      <button id="btn-athlete-mgmt" class="nav-button admin-only" onclick="window.location.href='admin-athlete-management.html'" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); display: none;">
         👥 Manage Athlete Access
       </button>
     </section>
   </main>
 
-  <!-- Hornet Animation Container -->
-  <div id="hornetContainer" class="hornet-container"></div>
-
   <script src="auth.js"></script>
-  <script src="script.js"></script>
   <script>
     // Check authentication
     if (!requireAthleteAuth()) {
