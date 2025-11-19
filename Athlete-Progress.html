@@ -1014,24 +1014,43 @@
               }
             }
           } else {
-            // For other exercises, find best weight, mean power, and peak power in the session
+            // For other exercises, calculate average of top 4 reps for the session
+            let allRepPowers = []; // Store all rep data from the session
+            
             session.sets.forEach(set => {
               if (!set.reps || set.reps.length === 0 || !set.weight || set.weight <= 0) return;
 
+              // Track highest weight for the session
               if (set.weight > sessionWeight) {
                 sessionWeight = set.weight;
               }
 
+              // Collect all rep power values
               set.reps.forEach(rep => {
                 const meanPower = rep.concentric_mean_velocity_z ? 
                   convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight) : 0;
                 const peakPower = rep.concentric_peak_power_per_mass_z ?
                   convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight) : 0;
 
-                if (meanPower > sessionMeanPower) sessionMeanPower = meanPower;
-                if (peakPower > sessionPeakPower) sessionPeakPower = peakPower;
+                if (meanPower > 0 || peakPower > 0) {
+                  allRepPowers.push({ meanPower, peakPower });
+                }
               });
             });
+
+            // Calculate average of top 4 reps
+            if (allRepPowers.length > 0) {
+              // Sort by mean power (descending) and take top 4
+              allRepPowers.sort((a, b) => b.meanPower - a.meanPower);
+              const topReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
+              
+              sessionMeanPower = topReps.reduce((sum, rep) => sum + rep.meanPower, 0) / topReps.length;
+              
+              // For peak power, sort by peak and take top 4
+              allRepPowers.sort((a, b) => b.peakPower - a.peakPower);
+              const topPeakReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
+              sessionPeakPower = topPeakReps.reduce((sum, rep) => sum + rep.peakPower, 0) / topPeakReps.length;
+            }
 
             if (sessionWeight > 0) {
               progress[exerciseName].sessions.push({
@@ -1121,12 +1140,12 @@
           bestLabel = 'Best Height';
           bestValue = data.best.height ? data.best.height.toFixed(1) + ' in' : 'N/A';
         } else {
-          // Use weight for improvement calculation
-          improvement = data.first.weight && data.best.weight
-            ? ((data.best.weight - data.first.weight) / data.first.weight * 100).toFixed(1)
+          // Use mean power (avg top 4) for improvement calculation
+          improvement = data.first.meanPower && data.best.meanPower
+            ? ((data.best.meanPower - data.first.meanPower) / data.first.meanPower * 100).toFixed(1)
             : 0;
-          bestLabel = 'Best Weight';
-          bestValue = data.best.weight ? data.best.weight.toFixed(1) + ' lbs' : 'N/A';
+          bestLabel = 'Best Power (Avg Top 4)';
+          bestValue = data.best.meanPower ? data.best.meanPower.toFixed(0) + ' W' : 'N/A';
         }
 
         const card = document.createElement('div');
@@ -1192,7 +1211,7 @@
 
         if (data.sessions.some(s => s.meanPower)) {
           datasets.push({
-            label: 'Mean Power (W)',
+            label: 'Mean Power - Avg Top 4 (W)',
             data: data.sessions.map(s => s.meanPower),
             borderColor: '#FFC72C',
             backgroundColor: 'rgba(255, 199, 44, 0.1)',
@@ -1204,7 +1223,7 @@
 
         if (data.sessions.some(s => s.peakPower)) {
           datasets.push({
-            label: 'Peak Power (W)',
+            label: 'Peak Power - Avg Top 4 (W)',
             data: data.sessions.map(s => s.peakPower),
             borderColor: '#FF6B35',
             backgroundColor: 'rgba(255, 107, 53, 0.1)',
