@@ -487,7 +487,7 @@
         const tr = document.createElement('tr');
         
         const status = athlete.passwordHash ? 'active' : 'pending';
-        const statusText = athlete.passwordHash ? 'Active' : 'Pending Setup';
+        const statusText = athlete.passwordHash ? 'Setup Complete' : 'Invite Sent';
         const adminBadge = athlete.admin ? '<span class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: 8px;">ADMIN</span>' : '';
         
         tr.innerHTML = `
@@ -496,7 +496,6 @@
           <td><span class="status-badge status-${status}">${statusText}</span></td>
           <td>
             ${!athlete.passwordHash ? `<button class="action-btn btn-invite" onclick="resendInvite(${index})">📧 Send Invite</button>` : ''}
-            ${!athlete.passwordHash ? `<button class="action-btn" onclick="markAsActive(${index})" style="background: #22c55e;">✓ Mark Active</button>` : ''}
             <button class="action-btn btn-copy" onclick="copyInviteLink(${index})">🔗 Copy Link</button>
             <button class="action-btn btn-delete" onclick="deleteAthlete(${index})">🗑️ Delete</button>
           </td>
