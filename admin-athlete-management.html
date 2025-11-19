@@ -496,6 +496,7 @@
           <td><span class="status-badge status-${status}">${statusText}</span></td>
           <td>
             ${!athlete.passwordHash ? `<button class="action-btn btn-invite" onclick="resendInvite(${index})">📧 Send Invite</button>` : ''}
+            ${!athlete.passwordHash ? `<button class="action-btn" onclick="markAsActive(${index})" style="background: #22c55e;">✓ Mark Active</button>` : ''}
             <button class="action-btn btn-copy" onclick="copyInviteLink(${index})">🔗 Copy Link</button>
             <button class="action-btn btn-delete" onclick="deleteAthlete(${index})">🗑️ Delete</button>
           </td>
@@ -662,6 +663,17 @@
       }).catch(() => {
         prompt('Copy this link:', inviteLink);
       });
+    }
+
+    function markAsActive(index) {
+      if (confirm('Confirm this athlete has completed their account setup?')) {
+        // Mark as active with a placeholder password hash
+        athleteCredentials[index].passwordHash = 'SETUP_COMPLETED';
+        athleteCredentials[index].setupCompletedAt = Date.now();
+        saveAthleteCredentials();
+        renderTable();
+        alert('✓ Athlete marked as active!');
+      }
     }
 
     function deleteAthlete(index) {
