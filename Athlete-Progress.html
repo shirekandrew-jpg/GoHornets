@@ -673,7 +673,7 @@
       // Auto-select first athlete for better UX
       if (activeUsers.length > 0 && !dropdown.value) {
         dropdown.value = activeUsers[0].id;
-        loadAndDisplayAthleteProgress(activeUsers[0].id);
+        displayAthleteProgress(activeUsers[0].id);
       }
 
       dropdown.addEventListener('change', (e) => {
