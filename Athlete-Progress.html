@@ -681,18 +681,11 @@
         // Load sets only for this specific athlete with selected time range
         const athleteSets = await fetchSetsForAthlete(userId, timeRange);
         
-        // Display the progress immediately (with rating as "Calculating...")
-        displayAthleteProgress(userId, athleteSets, 'Calculating...');
+        // Calculate proper Hornet Rating
+        const rating = await calculateProperAthleteRating(userId, timeRange);
         
-        // Calculate proper Hornet Rating in background (don't await)
-        calculateProperAthleteRating(userId, timeRange).then(rating => {
-          // Update rating when ready
-          document.getElementById('overallRating').textContent = rating || '--';
-          console.log(`Rating updated for user ${userId}: ${rating}`);
-        }).catch(error => {
-          console.error('Error calculating rating:', error);
-          document.getElementById('overallRating').textContent = '--';
-        });
+        // Display the progress
+        displayAthleteProgress(userId, athleteSets, rating);
         
       } catch (error) {
         console.error('Error loading athlete progress:', error);
@@ -790,11 +783,8 @@
     // Calculate proper Hornet Rating using same logic as Hornet Ratings page
     async function calculateProperAthleteRating(userId, timeRange = 'all') {
       try {
-        console.log(`Calculating rating for user ${userId} with time range ${timeRange}...`);
-        
         // Need to load ALL users and their data to calculate proper percentile-based ratings
         const allActiveUsers = allUsers.filter(u => u.active === true);
-        console.log(`Loading data for ${allActiveUsers.length} users to calculate rating...`);
         
         // Calculate time range for data
         const endTime = Math.floor(Date.now() / 1000);
@@ -814,15 +804,12 @@
           .filter(ex => ex.hornetRating === true)
           .map(ex => ex.name);
         
-        console.log(`Using ${ratingExercises.length} rating exercises:`, ratingExercises);
-        
         const ratingExerciseObjects = Object.keys(allExercises)
           .filter(id => ratingExercises.includes(allExercises[id]))
           .map(id => ({ id: parseInt(id), name: allExercises[id] }));
         
         // Load sets for all users for rating exercises only
         const allUserMetrics = [];
-        let loadedUsers = 0;
         
         for (const user of allActiveUsers) {
           let userSets = [];
@@ -837,19 +824,10 @@
           
           const metrics = calculateSingleAthleteMetrics(user, userSets);
           allUserMetrics.push(metrics);
-          loadedUsers++;
-          
-          // Log progress every 20 users
-          if (loadedUsers % 20 === 0) {
-            console.log(`Loaded ${loadedUsers}/${allActiveUsers.length} users...`);
-          }
         }
-        
-        console.log(`Finished loading all ${loadedUsers} users. Calculating rating...`);
         
         // Now calculate ratings using the same logic as Hornet Ratings page
         const rating = calculateRatingForSingleAthlete(userId, allUserMetrics);
-        console.log(`Calculated rating for user ${userId}: ${rating}`);
         return rating;
         
       } catch (error) {
