@@ -808,7 +808,7 @@
         
         // Initialize exercise object if it doesn't exist
         if (!athlete.exercises[set.exercise_name]) {
-          athlete.exercises[set.exercise_name] = { strength: null, power: null };
+          athlete.exercises[set.exercise_name] = { strength: null, power: null, allPowers: [] };
         }
         
         // Process each valid rep in the set
@@ -817,12 +817,12 @@
           
           const exercise = athlete.exercises[set.exercise_name];
           
-          // Track best weight (strength) for this exercise
+          // Track best weight (strength) for this exercise - single best rep
           if (!exercise.strength || set.weight > exercise.strength) {
             exercise.strength = set.weight;
           }
           
-          // Track best power for this exercise
+          // Collect all power values for avg top 4 calculation
           let power = null;
           if (exerciseConfig.movement_pattern === 'JUMP') {
             // Use peak power for jumps
@@ -836,9 +836,27 @@
             }
           }
           
-          // Only count power if it's greater than 0
-          if (power && power > 0 && (!exercise.power || power > exercise.power)) {
-            exercise.power = power;
+          // Collect all valid power values for avg top 4
+          if (power && power > 0) {
+            if (!exercise.allPowers) exercise.allPowers = [];
+            exercise.allPowers.push(power);
+          }
+        });
+      });
+      
+      // Calculate average of top 4 power values for each athlete/exercise
+      Object.values(athleteMetrics).forEach(athlete => {
+        Object.keys(athlete.exercises).forEach(exerciseName => {
+          const exercise = athlete.exercises[exerciseName];
+          
+          if (exercise.allPowers && exercise.allPowers.length > 0) {
+            // Sort powers descending and take top 4
+            exercise.allPowers.sort((a, b) => b - a);
+            const topPowers = exercise.allPowers.slice(0, Math.min(4, exercise.allPowers.length));
+            exercise.power = topPowers.reduce((sum, p) => sum + p, 0) / topPowers.length;
+            
+            // Clean up temporary array
+            delete exercise.allPowers;
           }
         });
       });

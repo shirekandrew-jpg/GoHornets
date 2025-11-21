@@ -73,18 +73,6 @@
       "jump": ""
     },
     {
-      "name": "Barbell Curl",
-      "hornetRating": false,
-      "movementPattern": "Pull",
-      "bodySegment": "Upper",
-      "appliedForce": "Pull",
-      "lowerBodyStrength": "",
-      "bodyPower": "",
-      "upperBodyStrength": "LBS",
-      "upperBodyPower": "Mean Power",
-      "jump": ""
-    },
-    {
       "name": "Barbell Floor Press",
       "hornetRating": false,
       "movementPattern": "Press",
@@ -118,18 +106,6 @@
       "bodyPower": "Mean Power",
       "upperBodyStrength": "",
       "upperBodyPower": "",
-      "jump": ""
-    },
-    {
-      "name": "Barbell Tricep Extension",
-      "hornetRating": false,
-      "movementPattern": "Press",
-      "bodySegment": "Upper",
-      "appliedForce": "Push",
-      "lowerBodyStrength": "",
-      "bodyPower": "",
-      "upperBodyStrength": "LBS",
-      "upperBodyPower": "Mean Power",
       "jump": ""
     },
     {

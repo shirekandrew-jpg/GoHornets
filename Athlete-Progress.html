@@ -1040,16 +1040,21 @@
 
             // Calculate average of top 4 reps
             if (allRepPowers.length > 0) {
-              // Sort by mean power (descending) and take top 4
-              allRepPowers.sort((a, b) => b.meanPower - a.meanPower);
-              const topReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
+              // Get exercise config to determine which power type to calculate
+              const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+              const movementPattern = exerciseData?.movementPattern;
               
-              sessionMeanPower = topReps.reduce((sum, rep) => sum + rep.meanPower, 0) / topReps.length;
-              
-              // For peak power, sort by peak and take top 4
-              allRepPowers.sort((a, b) => b.peakPower - a.peakPower);
-              const topPeakReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
-              sessionPeakPower = topPeakReps.reduce((sum, rep) => sum + rep.peakPower, 0) / topPeakReps.length;
+              // For Jump and Olympic exercises, calculate peak power
+              if (movementPattern === 'Jump' || movementPattern === 'Olympic') {
+                allRepPowers.sort((a, b) => b.peakPower - a.peakPower);
+                const topPeakReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
+                sessionPeakPower = topPeakReps.reduce((sum, rep) => sum + rep.peakPower, 0) / topPeakReps.length;
+              } else {
+                // For strength exercises, calculate mean power
+                allRepPowers.sort((a, b) => b.meanPower - a.meanPower);
+                const topReps = allRepPowers.slice(0, Math.min(4, allRepPowers.length));
+                sessionMeanPower = topReps.reduce((sum, rep) => sum + rep.meanPower, 0) / topReps.length;
+              }
             }
 
             if (sessionWeight > 0) {
@@ -1128,6 +1133,11 @@
         const data = progress[exerciseName];
         const isJump = exerciseName === 'Vertical Jump';
         
+        // Get exercise config to determine power type
+        const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+        const movementPattern = exerciseData?.movementPattern;
+        const isPeakPowerExercise = movementPattern === 'Jump' || movementPattern === 'Olympic';
+        
         // Calculate improvement based on exercise type
         let improvement = 0;
         let bestLabel = '';
@@ -1140,17 +1150,34 @@
           bestLabel = 'Best Height';
           bestValue = data.best.height ? data.best.height.toFixed(1) + ' in' : 'N/A';
         } else {
-          // Use mean power (avg top 4) for improvement calculation
-          improvement = data.first.meanPower && data.best.meanPower
-            ? ((data.best.meanPower - data.first.meanPower) / data.first.meanPower * 100).toFixed(1)
+          // Use weight for improvement calculation (1RM)
+          improvement = data.first.weight && data.best.weight
+            ? ((data.best.weight - data.first.weight) / data.first.weight * 100).toFixed(1)
             : 0;
-          bestLabel = 'Best Power (Avg Top 4)';
-          bestValue = data.best.meanPower ? data.best.meanPower.toFixed(0) + ' W' : 'N/A';
+          bestLabel = 'Best Weight';
+          bestValue = data.best.weight ? data.best.weight.toFixed(1) + ' lbs' : 'N/A';
         }
 
         const card = document.createElement('div');
         card.className = 'exercise-card';
         const chartId = `chart-${exerciseName.replace(/\s+/g, '-').toLowerCase()}`;
+        
+        // Determine which power stat to show
+        let powerStatHtml = '';
+        if (!isJump) {
+          if (isPeakPowerExercise && data.best.peakPower) {
+            powerStatHtml = `<div class="metric-stat">
+              <div class="metric-stat-label">Best Peak Power (Avg 4)</div>
+              <div class="metric-stat-value">${data.best.peakPower.toFixed(0)} W</div>
+            </div>`;
+          } else if (!isPeakPowerExercise && data.best.meanPower) {
+            powerStatHtml = `<div class="metric-stat">
+              <div class="metric-stat-label">Best Mean Power (Avg 4)</div>
+              <div class="metric-stat-value">${data.best.meanPower.toFixed(0)} W</div>
+            </div>`;
+          }
+        }
+        
         card.innerHTML = `
           <div class="exercise-name">${exerciseName}</div>
           <div class="chart-container">
@@ -1161,6 +1188,7 @@
               <div class="metric-stat-label">${bestLabel}</div>
               <div class="metric-stat-value">${bestValue}</div>
             </div>
+            ${powerStatHtml}
             <div class="metric-stat">
               <div class="metric-stat-label">Sessions</div>
               <div class="metric-stat-value">${data.sessions.length}</div>
@@ -1198,7 +1226,7 @@
           fill: true
         });
       } else {
-        // For other exercises, show weight, mean power, and peak power
+        // For other exercises, show weight and appropriate power type
         datasets.push({
           label: 'Weight (lbs)',
           data: data.sessions.map(s => s.weight),
@@ -1209,28 +1237,36 @@
           yAxisID: 'y-weight'
         });
 
-        if (data.sessions.some(s => s.meanPower)) {
-          datasets.push({
-            label: 'Mean Power - Avg Top 4 (W)',
-            data: data.sessions.map(s => s.meanPower),
-            borderColor: '#FFC72C',
-            backgroundColor: 'rgba(255, 199, 44, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            yAxisID: 'y-power'
-          });
-        }
-
-        if (data.sessions.some(s => s.peakPower)) {
-          datasets.push({
-            label: 'Peak Power - Avg Top 4 (W)',
-            data: data.sessions.map(s => s.peakPower),
-            borderColor: '#FF6B35',
-            backgroundColor: 'rgba(255, 107, 53, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            yAxisID: 'y-power'
-          });
+        // Get exercise config to determine power type
+        const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+        const movementPattern = exerciseData?.movementPattern;
+        
+        // Show peak power for Jump and Olympic exercises
+        if (movementPattern === 'Jump' || movementPattern === 'Olympic') {
+          if (data.sessions.some(s => s.peakPower)) {
+            datasets.push({
+              label: 'Peak Power - Avg Top 4 (W)',
+              data: data.sessions.map(s => s.peakPower),
+              borderColor: '#FF6B35',
+              backgroundColor: 'rgba(255, 107, 53, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              yAxisID: 'y-power'
+            });
+          }
+        } else {
+          // Show mean power for strength exercises (Squat, Hinge, Press, etc.)
+          if (data.sessions.some(s => s.meanPower)) {
+            datasets.push({
+              label: 'Mean Power - Avg Top 4 (W)',
+              data: data.sessions.map(s => s.meanPower),
+              borderColor: '#FFC72C',
+              backgroundColor: 'rgba(255, 199, 44, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              yAxisID: 'y-power'
+            });
+          }
         }
       }
 
