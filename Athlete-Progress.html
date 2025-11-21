@@ -317,8 +317,8 @@
           <div class="stat-value" id="totalWorkouts">0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Hornet Rating</div>
-          <div class="stat-value" id="overallRating">--</div>
+          <div class="stat-label">Exercises Tracked</div>
+          <div class="stat-value" id="totalExercises">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Last Workout</div>
@@ -436,9 +436,9 @@
     async function loadData() {
       try {
         // Start continuous progress animation
-        const progressPromise = startContinuousProgress(15000, 'Loading data...');
+        const progressPromise = startContinuousProgress(30000, 'Loading all data...');
         
-        // Only load active users (much faster)
+        // Load active users
         allUsers = await loadActiveUsers();
         console.log('Loaded users');
 
@@ -448,6 +448,10 @@
           allExercises[ex.id] = ex.name;
         });
         console.log('Loaded exercises');
+
+        // Load ALL sets for ALL exercises upfront
+        allSets = await fetchAllSets(exercises);
+        console.log('Loaded all sets');
 
         // Data is ready - jump to 100%
         stopProgressAndComplete('Data ready!');
@@ -558,7 +562,30 @@
       return [];
     }
 
-    // REMOVED: fetchAllSets() - Now loading per athlete on demand for better performance
+    async function fetchAllSets(exercises) {
+      try {
+        let allSets = [];
+        const endTime = Math.floor(Date.now() / 1000);
+        const beginTime = 0; // All time
+        
+        for (const exercise of exercises) {
+          console.log(`Loading sets for ${exercise.name}...`);
+          const sets = await fetchSetsForExercise(exercise.id, beginTime, endTime);
+          const setsWithName = sets.map(set => ({
+            ...set,
+            exercise_name: exercise.name
+          }));
+          allSets = allSets.concat(setsWithName);
+          console.log(`Loaded ${sets.length} sets for ${exercise.name}`);
+        }
+        
+        console.log(`Total sets loaded: ${allSets.length}`);
+        return allSets;
+      } catch (error) {
+        console.error('Error loading sets:', error);
+        return [];
+      }
+    }
 
     async function fetchSetsForExercise(exerciseId, beginTime, endTime, userId = null) {
       try {
@@ -652,7 +679,7 @@
       dropdown.addEventListener('change', (e) => {
         const userId = parseInt(e.target.value);
         if (userId) {
-          loadAndDisplayAthleteProgress(userId);
+          displayAthleteProgress(userId);
         } else {
           hideProgress();
         }
@@ -663,34 +690,61 @@
       timeRangeSelector.addEventListener('change', () => {
         const userId = parseInt(dropdown.value);
         if (userId) {
-          loadAndDisplayAthleteProgress(userId);
+          displayAthleteProgress(userId);
         }
       });
     }
 
-    async function loadAndDisplayAthleteProgress(userId) {
-      try {
-        // Show loading state
-        document.getElementById('progressContent').classList.remove('active');
-        document.getElementById('noData').textContent = 'Loading athlete data...';
-        document.getElementById('noData').style.display = 'block';
-        
-        // Get selected time range
-        const timeRange = document.getElementById('timeRangeSelector').value;
-        
-        // Load sets only for this specific athlete with selected time range
-        const athleteSets = await fetchSetsForAthlete(userId, timeRange);
-        
-        // Calculate proper Hornet Rating
-        const rating = await calculateProperAthleteRating(userId, timeRange);
-        
-        // Display the progress
-        displayAthleteProgress(userId, athleteSets, rating);
-        
-      } catch (error) {
-        console.error('Error loading athlete progress:', error);
-        document.getElementById('noData').textContent = 'Error loading athlete data. Please try again.';
+    function displayAthleteProgress(userId) {
+      const athlete = allUsers.find(u => u.id === userId);
+      if (!athlete) return;
+
+      // Update title with athlete name
+      const athleteName = athlete.name || `${athlete.first_name || ''} ${athlete.last_name || ''}`.trim();
+      document.getElementById('progressTitle').textContent = `📈 ${athleteName} Athlete Progress`;
+
+      document.getElementById('progressContent').classList.add('active');
+      document.getElementById('noData').style.display = 'none';
+
+      // Get selected time range
+      const timeRange = document.getElementById('timeRangeSelector').value;
+      const endTime = Date.now() / 1000;
+      let beginTime;
+      
+      switch(timeRange) {
+        case '1m': beginTime = endTime - (30 * 24 * 60 * 60); break;
+        case '3m': beginTime = endTime - (90 * 24 * 60 * 60); break;
+        case '6m': beginTime = endTime - (180 * 24 * 60 * 60); break;
+        case '1y': beginTime = endTime - (365 * 24 * 60 * 60); break;
+        case '2y': beginTime = endTime - (2 * 365 * 24 * 60 * 60); break;
+        case '3y': beginTime = endTime - (3 * 365 * 24 * 60 * 60); break;
+        default: beginTime = 0; break;
       }
+
+      // Filter sets for this athlete and time range
+      const athleteSets = allSets.filter(set => 
+        set.user_id === userId && set.created_at >= beginTime
+      );
+      
+      // Calculate overview stats
+      const uniqueDates = new Set(athleteSets.map(s => new Date(s.created_at * 1000).toDateString()));
+      const totalWorkouts = uniqueDates.size;
+      const lastWorkout = athleteSets.length > 0 
+        ? new Date(Math.max(...athleteSets.map(s => s.created_at * 1000))).toLocaleDateString()
+        : '--';
+      
+      const uniqueExercises = new Set(athleteSets.map(s => s.exercise_name));
+      
+      document.getElementById('totalWorkouts').textContent = totalWorkouts;
+      document.getElementById('lastWorkout').textContent = lastWorkout;
+      document.getElementById('totalExercises').textContent = uniqueExercises.size;
+
+      // Process exercise data
+      const exerciseProgress = calculateExerciseProgress(athleteSets);
+      console.log('Exercise progress calculated:', exerciseProgress);
+      
+      // Display all exercise progress
+      displayAllExercisesProgress(exerciseProgress);
     }
 
     async function fetchSetsForAthlete(userId, timeRange = 'all') {
@@ -781,266 +835,6 @@
     }
 
     // Calculate proper Hornet Rating using same logic as Hornet Ratings page
-    async function calculateProperAthleteRating(userId, timeRange = 'all') {
-      try {
-        // Need to load ALL users and their data to calculate proper percentile-based ratings
-        const allActiveUsers = allUsers.filter(u => u.active === true);
-        
-        // Calculate time range for data
-        const endTime = Math.floor(Date.now() / 1000);
-        let beginTime;
-        switch(timeRange) {
-          case '1m': beginTime = endTime - (30 * 24 * 60 * 60); break;
-          case '3m': beginTime = endTime - (90 * 24 * 60 * 60); break;
-          case '6m': beginTime = endTime - (180 * 24 * 60 * 60); break;
-          case '1y': beginTime = endTime - (365 * 24 * 60 * 60); break;
-          case '2y': beginTime = endTime - (2 * 365 * 24 * 60 * 60); break;
-          case '3y': beginTime = endTime - (3 * 365 * 24 * 60 * 60); break;
-          default: beginTime = 0; break;
-        }
-        
-        // Get only rating exercises
-        const ratingExercises = EXERCISES_CONFIG
-          .filter(ex => ex.hornetRating === true)
-          .map(ex => ex.name);
-        
-        const ratingExerciseObjects = Object.keys(allExercises)
-          .filter(id => ratingExercises.includes(allExercises[id]))
-          .map(id => ({ id: parseInt(id), name: allExercises[id] }));
-        
-        // Load sets for all users for rating exercises only
-        const allUserMetrics = [];
-        
-        for (const user of allActiveUsers) {
-          let userSets = [];
-          for (const exercise of ratingExerciseObjects) {
-            const sets = await fetchSetsForExercise(exercise.id, beginTime, endTime, user.id);
-            const setsWithName = sets.map(set => ({
-              ...set,
-              exercise_name: exercise.name
-            }));
-            userSets = userSets.concat(setsWithName);
-          }
-          
-          const metrics = calculateSingleAthleteMetrics(user, userSets);
-          allUserMetrics.push(metrics);
-        }
-        
-        // Now calculate ratings using the same logic as Hornet Ratings page
-        const rating = calculateRatingForSingleAthlete(userId, allUserMetrics);
-        return rating;
-        
-      } catch (error) {
-        console.error('Error calculating rating:', error);
-        return null;
-      }
-    }
-
-    function calculateRatingForSingleAthlete(userId, allAthleteMetrics) {
-      const targetAthlete = allAthleteMetrics.find(a => a.user_id === userId);
-      if (!targetAthlete) return null;
-      
-      const gender = targetAthlete.gender;
-      const genderAthletes = allAthleteMetrics.filter(a => a.gender === gender);
-      
-      const exercises = EXERCISES_CONFIG
-        .filter(ex => ex.hornetRating === true)
-        .map(ex => ex.name);
-      const metrics = ['strength', 'power'];
-      
-      // Calculate rating scales
-      const ratingScales = {};
-      exercises.forEach(exercise => {
-        ratingScales[exercise] = {};
-        
-        metrics.forEach(metric => {
-          const values = genderAthletes
-            .map(a => a.exercises[exercise]?.[metric])
-            .filter(v => v !== null && v !== undefined);
-          
-          if (values.length > 0) {
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            const range = maxValue - minValue;
-            const step = range > 0 ? range / 50 : 1;
-            ratingScales[exercise][metric] = { minValue, maxValue, step };
-          }
-        });
-      });
-      
-      // Vertical Jump scale
-      const jumpHeights = genderAthletes
-        .map(a => a.exercises['Vertical Jump']?.jumpHeight)
-        .filter(v => v !== null && v !== undefined);
-      
-      if (jumpHeights.length > 0) {
-        const minValue = Math.min(...jumpHeights);
-        const maxValue = Math.max(...jumpHeights);
-        const range = maxValue - minValue;
-        const step = range > 0 ? range / 50 : 1;
-        ratingScales['Vertical Jump'] = { jumpHeight: { minValue, maxValue, step } };
-      }
-      
-      // Calculate category ratings for target athlete
-      const lowerBodyExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
-      
-      const lowerStrengthRatings = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL']
-        .map(ex => {
-          const value = targetAthlete.exercises[ex]?.strength;
-          const scale = ratingScales[ex]?.strength;
-          if (value && scale) {
-            const rawRating = 49 + ((value - scale.minValue) / scale.step);
-            return Math.max(49, Math.min(99, Math.round(rawRating)));
-          }
-          return null;
-        })
-        .filter(r => r !== null);
-      
-      const lowerStrength = lowerStrengthRatings.length > 0
-        ? Math.round(lowerStrengthRatings.reduce((sum, r) => sum + r, 0) / lowerStrengthRatings.length)
-        : 49;
-      
-      const lowerPowerRatings = lowerBodyExercises
-        .map(ex => {
-          const value = targetAthlete.exercises[ex]?.power;
-          const scale = ratingScales[ex]?.power;
-          if (value && scale) {
-            const rawRating = 49 + ((value - scale.minValue) / scale.step);
-            return Math.max(49, Math.min(99, Math.round(rawRating)));
-          }
-          return null;
-        })
-        .filter(r => r !== null);
-      
-      const lowerPower = lowerPowerRatings.length > 0
-        ? Math.round(lowerPowerRatings.reduce((sum, r) => sum + r, 0) / lowerPowerRatings.length)
-        : 49;
-      
-      const upperStrength = (() => {
-        const value = targetAthlete.exercises['Bench Press']?.strength;
-        const scale = ratingScales['Bench Press']?.strength;
-        if (value && scale) {
-          const rawRating = 49 + ((value - scale.minValue) / scale.step);
-          return Math.max(49, Math.min(99, Math.round(rawRating)));
-        }
-        return 49;
-      })();
-      
-      const upperPower = (() => {
-        const value = targetAthlete.exercises['Bench Press']?.power;
-        const scale = ratingScales['Bench Press']?.power;
-        if (value && scale) {
-          const rawRating = 49 + ((value - scale.minValue) / scale.step);
-          return Math.max(49, Math.min(99, Math.round(rawRating)));
-        }
-        return 49;
-      })();
-      
-      const jumpRating = (() => {
-        const value = targetAthlete.exercises['Vertical Jump']?.jumpHeight;
-        const scale = ratingScales['Vertical Jump']?.jumpHeight;
-        if (value && scale) {
-          const rawRating = 49 + ((value - scale.minValue) / scale.step);
-          return Math.max(49, Math.min(99, Math.round(rawRating)));
-        }
-        return 49;
-      })();
-      
-      // Overall rating
-      const categoryRatings = [lowerStrength, lowerPower, upperStrength, upperPower, jumpRating]
-        .filter(r => r !== 49);
-      
-      return categoryRatings.length > 0 
-        ? Math.round(categoryRatings.reduce((sum, r) => sum + r, 0) / categoryRatings.length)
-        : 49;
-    }
-
-    // REMOVED: calculateAthleteRating() - Inaccurate calculation removed
-    // For official Hornet Ratings, see the Hornet Ratings page which uses proper percentile-based scoring
-
-    async function fetchAthleteRating(userId) {
-      try {
-        // This function is no longer used - ratings are pre-calculated
-        const athlete = allUsers.find(u => u.id === userId);
-        if (!athlete) return null;
-
-        // Get all users for rating scale calculation
-        const athleteSets = allSets.filter(set => set.user_id === userId);
-        
-        // Calculate metrics for this athlete
-        const athleteMetrics = calculateSingleAthleteMetrics(athlete, athleteSets);
-        
-        // Calculate rating using all users as reference
-        const rating = await calculateAthleteRating(athleteMetrics, athlete.gender);
-        
-        return rating;
-      } catch (error) {
-        console.error('Error fetching athlete rating:', error);
-        return null;
-      }
-    }
-
-    function calculateSingleAthleteMetrics(user, sets) {
-      const metrics = {
-        user_id: user.id,
-        name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-        gender: user.gender ? user.gender.toLowerCase() : 'unknown',
-        exercises: {
-          'Back Squat': { strength: null, power: null },
-          'Front Squat': { strength: null, power: null },
-          'Trap Bar Deadlift': { strength: null, power: null },
-          'Bar RDL': { strength: null, power: null },
-          'Trap Bar Jump': { strength: null, power: null },
-          'Bench Press': { strength: null, power: null },
-          'Vertical Jump': { jumpHeight: null }
-        }
-      };
-
-      sets.forEach(set => {
-        const exerciseName = set.exercise_name;
-        const exerciseConfig = EXERCISE_CONFIG[exerciseName];
-        if (!exerciseConfig) return;
-
-        if (exerciseConfig.movement_pattern === 'VERTICAL_JUMP') {
-          if (set.max_jump_height && (!metrics.exercises[exerciseName].jumpHeight || set.max_jump_height > metrics.exercises[exerciseName].jumpHeight)) {
-            metrics.exercises[exerciseName].jumpHeight = set.max_jump_height;
-          }
-          return;
-        }
-
-        // Get only valid reps (excluding ghost reps)
-        const validReps = getValidReps(set);
-        if (validReps.length === 0 || !set.weight || set.weight <= 0) return;
-
-        validReps.forEach(rep => {
-          if (!metrics.exercises[exerciseName].strength || set.weight > metrics.exercises[exerciseName].strength) {
-            metrics.exercises[exerciseName].strength = set.weight;
-          }
-
-          // Calculate power based on exercise type
-          let power = null;
-          if (exerciseConfig.movement_pattern === 'JUMP') {
-            // Use peak power for jumps
-            if (rep.concentric_peak_power_per_mass_z) {
-              power = convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight);
-            }
-          } else {
-            // Use mean power for other exercises
-            if (rep.concentric_mean_velocity_z) {
-              power = convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight);
-            }
-          }
-          
-          // Only count power if it's greater than 0
-          if (power && power > 0 && (!metrics.exercises[exerciseName].power || power > metrics.exercises[exerciseName].power)) {
-            metrics.exercises[exerciseName].power = power;
-          }
-        });
-      });
-
-      return metrics;
-    }
-
     function calculateExerciseProgress(athleteSets) {
       const progress = {};
 
