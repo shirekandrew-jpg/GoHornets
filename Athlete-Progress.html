@@ -681,8 +681,11 @@
         // Load sets only for this specific athlete with selected time range
         const athleteSets = await fetchSetsForAthlete(userId, timeRange);
         
+        // Calculate proper Hornet Rating
+        const rating = await calculateProperAthleteRating(userId, timeRange);
+        
         // Display the progress
-        displayAthleteProgress(userId, athleteSets);
+        displayAthleteProgress(userId, athleteSets, rating);
         
       } catch (error) {
         console.error('Error loading athlete progress:', error);
@@ -747,7 +750,7 @@
       }
     }
 
-    function displayAthleteProgress(userId, athleteSets) {
+    function displayAthleteProgress(userId, athleteSets, rating) {
       const athlete = allUsers.find(u => u.id === userId);
       if (!athlete) return;
 
@@ -767,10 +770,6 @@
       
       document.getElementById('totalWorkouts').textContent = totalWorkouts;
       document.getElementById('lastWorkout').textContent = lastWorkout;
-
-      // Calculate athlete rating from their own data
-      const athleteMetrics = calculateSingleAthleteMetrics(athlete, athleteSets);
-      const rating = calculateAthleteRating(athleteMetrics);
       document.getElementById('overallRating').textContent = rating || '--';
 
       // Process exercise data
@@ -781,39 +780,183 @@
       displayAllExercisesProgress(exerciseProgress);
     }
 
-    // Simplified rating calculation based on athlete's own performance
-    function calculateAthleteRating(metrics) {
-      const exercises = Object.keys(metrics.exercises);
-      if (exercises.length === 0) return null;
-      
-      let totalScore = 0;
-      let count = 0;
-      
-      // Simple scoring: normalize each metric and average
-      exercises.forEach(exerciseName => {
-        const exercise = metrics.exercises[exerciseName];
+    // Calculate proper Hornet Rating using same logic as Hornet Ratings page
+    async function calculateProperAthleteRating(userId, timeRange = 'all') {
+      try {
+        // Need to load ALL users and their data to calculate proper percentile-based ratings
+        const allActiveUsers = allUsers.filter(u => u.active === true);
         
-        if (exercise.strength && exercise.strength > 0) {
-          totalScore += Math.min(100, exercise.strength / 3); // Rough normalization
-          count++;
+        // Calculate time range for data
+        const endTime = Math.floor(Date.now() / 1000);
+        let beginTime;
+        switch(timeRange) {
+          case '1m': beginTime = endTime - (30 * 24 * 60 * 60); break;
+          case '3m': beginTime = endTime - (90 * 24 * 60 * 60); break;
+          case '6m': beginTime = endTime - (180 * 24 * 60 * 60); break;
+          case '1y': beginTime = endTime - (365 * 24 * 60 * 60); break;
+          case '2y': beginTime = endTime - (2 * 365 * 24 * 60 * 60); break;
+          case '3y': beginTime = endTime - (3 * 365 * 24 * 60 * 60); break;
+          default: beginTime = 0; break;
         }
         
-        if (exercise.power && exercise.power > 0) {
-          totalScore += Math.min(100, exercise.power / 20); // Rough normalization
-          count++;
+        // Get only rating exercises
+        const ratingExercises = EXERCISES_CONFIG
+          .filter(ex => ex.hornetRating === true)
+          .map(ex => ex.name);
+        
+        const ratingExerciseObjects = Object.keys(allExercises)
+          .filter(id => ratingExercises.includes(allExercises[id]))
+          .map(id => ({ id: parseInt(id), name: allExercises[id] }));
+        
+        // Load sets for all users for rating exercises only
+        const allUserMetrics = [];
+        
+        for (const user of allActiveUsers) {
+          let userSets = [];
+          for (const exercise of ratingExerciseObjects) {
+            const sets = await fetchSetsForExercise(exercise.id, beginTime, endTime, user.id);
+            const setsWithName = sets.map(set => ({
+              ...set,
+              exercise_name: exercise.name
+            }));
+            userSets = userSets.concat(setsWithName);
+          }
+          
+          const metrics = calculateSingleAthleteMetrics(user, userSets);
+          allUserMetrics.push(metrics);
         }
         
-        if (exercise.jumpHeight && exercise.jumpHeight > 0) {
-          totalScore += Math.min(100, exercise.jumpHeight * 3); // Rough normalization
-          count++;
-        }
-      });
-      
-      return count > 0 ? Math.round(totalScore / count) : null;
+        // Now calculate ratings using the same logic as Hornet Ratings page
+        const rating = calculateRatingForSingleAthlete(userId, allUserMetrics);
+        return rating;
+        
+      } catch (error) {
+        console.error('Error calculating rating:', error);
+        return null;
+      }
     }
 
-    // Calculate ratings for all users (same logic as Hornet Ratings page)
-    // REMOVED: calculateAllRatings() - Now calculating simple rating per athlete on demand
+    function calculateRatingForSingleAthlete(userId, allAthleteMetrics) {
+      const targetAthlete = allAthleteMetrics.find(a => a.user_id === userId);
+      if (!targetAthlete) return null;
+      
+      const gender = targetAthlete.gender;
+      const genderAthletes = allAthleteMetrics.filter(a => a.gender === gender);
+      
+      const exercises = EXERCISES_CONFIG
+        .filter(ex => ex.hornetRating === true)
+        .map(ex => ex.name);
+      const metrics = ['strength', 'power'];
+      
+      // Calculate rating scales
+      const ratingScales = {};
+      exercises.forEach(exercise => {
+        ratingScales[exercise] = {};
+        
+        metrics.forEach(metric => {
+          const values = genderAthletes
+            .map(a => a.exercises[exercise]?.[metric])
+            .filter(v => v !== null && v !== undefined);
+          
+          if (values.length > 0) {
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const range = maxValue - minValue;
+            const step = range > 0 ? range / 50 : 1;
+            ratingScales[exercise][metric] = { minValue, maxValue, step };
+          }
+        });
+      });
+      
+      // Vertical Jump scale
+      const jumpHeights = genderAthletes
+        .map(a => a.exercises['Vertical Jump']?.jumpHeight)
+        .filter(v => v !== null && v !== undefined);
+      
+      if (jumpHeights.length > 0) {
+        const minValue = Math.min(...jumpHeights);
+        const maxValue = Math.max(...jumpHeights);
+        const range = maxValue - minValue;
+        const step = range > 0 ? range / 50 : 1;
+        ratingScales['Vertical Jump'] = { jumpHeight: { minValue, maxValue, step } };
+      }
+      
+      // Calculate category ratings for target athlete
+      const lowerBodyExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
+      
+      const lowerStrengthRatings = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL']
+        .map(ex => {
+          const value = targetAthlete.exercises[ex]?.strength;
+          const scale = ratingScales[ex]?.strength;
+          if (value && scale) {
+            const rawRating = 49 + ((value - scale.minValue) / scale.step);
+            return Math.max(49, Math.min(99, Math.round(rawRating)));
+          }
+          return null;
+        })
+        .filter(r => r !== null);
+      
+      const lowerStrength = lowerStrengthRatings.length > 0
+        ? Math.round(lowerStrengthRatings.reduce((sum, r) => sum + r, 0) / lowerStrengthRatings.length)
+        : 49;
+      
+      const lowerPowerRatings = lowerBodyExercises
+        .map(ex => {
+          const value = targetAthlete.exercises[ex]?.power;
+          const scale = ratingScales[ex]?.power;
+          if (value && scale) {
+            const rawRating = 49 + ((value - scale.minValue) / scale.step);
+            return Math.max(49, Math.min(99, Math.round(rawRating)));
+          }
+          return null;
+        })
+        .filter(r => r !== null);
+      
+      const lowerPower = lowerPowerRatings.length > 0
+        ? Math.round(lowerPowerRatings.reduce((sum, r) => sum + r, 0) / lowerPowerRatings.length)
+        : 49;
+      
+      const upperStrength = (() => {
+        const value = targetAthlete.exercises['Bench Press']?.strength;
+        const scale = ratingScales['Bench Press']?.strength;
+        if (value && scale) {
+          const rawRating = 49 + ((value - scale.minValue) / scale.step);
+          return Math.max(49, Math.min(99, Math.round(rawRating)));
+        }
+        return 49;
+      })();
+      
+      const upperPower = (() => {
+        const value = targetAthlete.exercises['Bench Press']?.power;
+        const scale = ratingScales['Bench Press']?.power;
+        if (value && scale) {
+          const rawRating = 49 + ((value - scale.minValue) / scale.step);
+          return Math.max(49, Math.min(99, Math.round(rawRating)));
+        }
+        return 49;
+      })();
+      
+      const jumpRating = (() => {
+        const value = targetAthlete.exercises['Vertical Jump']?.jumpHeight;
+        const scale = ratingScales['Vertical Jump']?.jumpHeight;
+        if (value && scale) {
+          const rawRating = 49 + ((value - scale.minValue) / scale.step);
+          return Math.max(49, Math.min(99, Math.round(rawRating)));
+        }
+        return 49;
+      })();
+      
+      // Overall rating
+      const categoryRatings = [lowerStrength, lowerPower, upperStrength, upperPower, jumpRating]
+        .filter(r => r !== 49);
+      
+      return categoryRatings.length > 0 
+        ? Math.round(categoryRatings.reduce((sum, r) => sum + r, 0) / categoryRatings.length)
+        : 49;
+    }
+
+    // REMOVED: calculateAthleteRating() - Inaccurate calculation removed
+    // For official Hornet Ratings, see the Hornet Ratings page which uses proper percentile-based scoring
 
     async function fetchAthleteRating(userId) {
       try {
