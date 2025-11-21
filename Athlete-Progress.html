@@ -681,11 +681,18 @@
         // Load sets only for this specific athlete with selected time range
         const athleteSets = await fetchSetsForAthlete(userId, timeRange);
         
-        // Calculate proper Hornet Rating
-        const rating = await calculateProperAthleteRating(userId, timeRange);
+        // Display the progress immediately (with rating as "Calculating...")
+        displayAthleteProgress(userId, athleteSets, 'Calculating...');
         
-        // Display the progress
-        displayAthleteProgress(userId, athleteSets, rating);
+        // Calculate proper Hornet Rating in background (don't await)
+        calculateProperAthleteRating(userId, timeRange).then(rating => {
+          // Update rating when ready
+          document.getElementById('overallRating').textContent = rating || '--';
+          console.log(`Rating updated for user ${userId}: ${rating}`);
+        }).catch(error => {
+          console.error('Error calculating rating:', error);
+          document.getElementById('overallRating').textContent = '--';
+        });
         
       } catch (error) {
         console.error('Error loading athlete progress:', error);
