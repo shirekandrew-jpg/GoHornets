@@ -1041,7 +1041,7 @@
             // Calculate average of top 4 reps
             if (allRepPowers.length > 0) {
               // Get exercise config to determine which power type to calculate
-              const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+              const exerciseData = EXERCISES_CONFIG.find(ex => ex.name === exerciseName);
               const movementPattern = exerciseData?.movementPattern;
               
               // For Jump and Olympic exercises, calculate peak power
@@ -1134,7 +1134,7 @@
         const isJump = exerciseName === 'Vertical Jump';
         
         // Get exercise config to determine power type
-        const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+        const exerciseData = EXERCISES_CONFIG.find(ex => ex.name === exerciseName);
         const movementPattern = exerciseData?.movementPattern;
         const isPeakPowerExercise = movementPattern === 'Jump' || movementPattern === 'Olympic';
         
@@ -1238,7 +1238,7 @@
         });
 
         // Get exercise config to determine power type
-        const exerciseData = EXERCISES_CONFIG.exercises.find(ex => ex.name === exerciseName);
+        const exerciseData = EXERCISES_CONFIG.find(ex => ex.name === exerciseName);
         const movementPattern = exerciseData?.movementPattern;
         
         // Show peak power for Jump and Olympic exercises

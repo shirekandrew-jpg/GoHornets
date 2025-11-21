@@ -121,30 +121,6 @@
       "jump": ""
     },
     {
-      "name": "Bench Throw",
-      "hornetRating": false,
-      "movementPattern": "Press",
-      "bodySegment": "Upper",
-      "appliedForce": "Push",
-      "lowerBodyStrength": "",
-      "bodyPower": "",
-      "upperBodyStrength": "LBS",
-      "upperBodyPower": "Mean Power",
-      "jump": ""
-    },
-    {
-      "name": "Bodyweight Squat",
-      "hornetRating": false,
-      "movementPattern": "Squat",
-      "bodySegment": "Lower",
-      "appliedForce": "Push",
-      "lowerBodyStrength": "LBS",
-      "bodyPower": "Mean Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
       "name": "Box Clean",
       "hornetRating": false,
       "movementPattern": "Olympic",
@@ -529,18 +505,6 @@
       "jump": ""
     },
     {
-      "name": "Pistol Squat",
-      "hornetRating": false,
-      "movementPattern": "Squat",
-      "bodySegment": "Lower",
-      "appliedForce": "Push",
-      "lowerBodyStrength": "LBS",
-      "bodyPower": "Mean Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
       "name": "Power Clean",
       "hornetRating": false,
       "movementPattern": "Olympic",
@@ -661,59 +625,11 @@
       "jump": ""
     },
     {
-      "name": "Split Clean",
-      "hornetRating": false,
-      "movementPattern": "Olympic",
-      "bodySegment": "Total",
-      "appliedForce": "Pull",
-      "lowerBodyStrength": "",
-      "bodyPower": "Peak Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
-      "name": "Split Hang Clean",
-      "hornetRating": false,
-      "movementPattern": "Olympic",
-      "bodySegment": "Total",
-      "appliedForce": "Pull",
-      "lowerBodyStrength": "",
-      "bodyPower": "Peak Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
-      "name": "Split Hang Power Clean",
-      "hornetRating": false,
-      "movementPattern": "Olympic",
-      "bodySegment": "Total",
-      "appliedForce": "Pull",
-      "lowerBodyStrength": "",
-      "bodyPower": "Peak Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
       "name": "Split Jerk",
       "hornetRating": false,
       "movementPattern": "Olympic",
       "bodySegment": "Total",
       "appliedForce": "Push",
-      "lowerBodyStrength": "",
-      "bodyPower": "Peak Power",
-      "upperBodyStrength": "",
-      "upperBodyPower": "",
-      "jump": ""
-    },
-    {
-      "name": "Split Power Clean",
-      "hornetRating": false,
-      "movementPattern": "Olympic",
-      "bodySegment": "Total",
-      "appliedForce": "Pull",
       "lowerBodyStrength": "",
       "bodyPower": "Peak Power",
       "upperBodyStrength": "",
