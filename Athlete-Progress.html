@@ -297,6 +297,18 @@
         <option value="">Select an Athlete</option>
       </select>
     </div>
+    
+    <div class="athlete-selector" style="justify-content: center; margin-top: -1rem;">
+      <select id="timeRangeSelector" class="athlete-dropdown" style="min-width: 180px;">
+        <option value="all">All Time</option>
+        <option value="3y">Last 3 Years</option>
+        <option value="2y">Last 2 Years</option>
+        <option value="1y">Last 1 Year</option>
+        <option value="6m">Last 6 Months</option>
+        <option value="3m">Last 3 Months</option>
+        <option value="1m">Last 1 Month</option>
+      </select>
+    </div>
 
     <div id="progressContent" class="progress-content">
       <div class="stats-overview">
@@ -423,11 +435,11 @@
 
     async function loadData() {
       try {
-        // Start continuous 30-second progress animation
-        const progressPromise = startContinuousProgress(30000, 'Loading data...');
+        // Start continuous progress animation
+        const progressPromise = startContinuousProgress(15000, 'Loading data...');
         
-        // Load ALL users (active + inactive) for proper rating calculations
-        allUsers = await loadAllUsers();
+        // Only load active users (much faster)
+        allUsers = await loadActiveUsers();
         console.log('Loaded users');
 
         const exercises = await fetchExercises();
@@ -436,13 +448,6 @@
           allExercises[ex.id] = ex.name;
         });
         console.log('Loaded exercises');
-
-        allSets = await fetchAllSets(exercises);
-        console.log('Loaded sets');
-
-        // Calculate ratings for all users (same as Hornet Ratings page)
-        calculateAllRatings();
-        console.log('Calculated ratings');
 
         // Data is ready - jump to 100%
         stopProgressAndComplete('Data ready!');
@@ -456,34 +461,7 @@
       }
     }
 
-    async function loadAllUsers() {
-      try {
-        let allUsers = [];
-        
-        // Load active users
-        const activeUsers = await fetchUsersByActiveStatus(true);
-        allUsers = allUsers.concat(activeUsers);
-        
-        // Load inactive users  
-        const inactiveUsers = await fetchUsersByActiveStatus(false);
-        allUsers = allUsers.concat(inactiveUsers);
-        
-        // Sort by name
-        allUsers.sort((a, b) => {
-          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
-          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        
-        console.log(`Loaded ${allUsers.length} total users (active + inactive)`);
-        return allUsers;
-      } catch (error) {
-        console.error('Error loading users:', error);
-        return [];
-      }
-    }
-
-    async function fetchUsersByActiveStatus(isActive) {
+    async function loadActiveUsers() {
       try {
         let users = [];
         let hasMore = true;
@@ -495,7 +473,7 @@
             limit: limit,
             next_token: nextToken,
             group_id: ORG_ID,
-            active: isActive
+            active: true  // Only load active users
           };
 
           const response = await fetch('https://api.perch.fit/v2/users', {
@@ -509,7 +487,7 @@
           });
 
           if (!response.ok) {
-            console.warn(`${isActive ? 'Active' : 'Inactive'} users fetch failed ${response.status}`);
+            console.warn(`Users fetch failed ${response.status}`);
             break;
           }
           
@@ -524,9 +502,17 @@
           }
         }
         
+        // Sort by name
+        users.sort((a, b) => {
+          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        
+        console.log(`Loaded ${users.length} active users`);
         return users;
       } catch (error) {
-        console.error(`Error loading ${isActive ? 'active' : 'inactive'} users:`, error);
+        console.error('Error loading users:', error);
         return [];
       }
     }
@@ -572,32 +558,9 @@
       return [];
     }
 
-    async function fetchAllSets(exercises) {
-      try {
-        let allSets = [];
-        const endTime = Math.floor(Date.now() / 1000);
-        const beginTime = 0; // Get all data from the beginning of time
-        
-        for (const exercise of exercises) {
-          console.log(`Loading sets for ${exercise.name}...`);
-          const sets = await fetchSetsForExercise(exercise.id, beginTime, endTime);
-          const setsWithName = sets.map(set => ({
-            ...set,
-            exercise_name: exercise.name
-          }));
-          allSets = allSets.concat(setsWithName);
-          console.log(`Loaded ${sets.length} sets for ${exercise.name}`);
-        }
-        
-        console.log(`Total sets loaded: ${allSets.length}`);
-        return allSets;
-      } catch (error) {
-        console.error('Error loading sets:', error);
-        return [];
-      }
-    }
+    // REMOVED: fetchAllSets() - Now loading per athlete on demand for better performance
 
-    async function fetchSetsForExercise(exerciseId, beginTime, endTime) {
+    async function fetchSetsForExercise(exerciseId, beginTime, endTime, userId = null) {
       try {
         let sets = [];
         let nextToken = null;
@@ -615,6 +578,11 @@
             begin_time: beginTime,
             end_time: endTime
           };
+          
+          // Add user filter if specified
+          if (userId) {
+            body.user_id = userId;
+          }
           
           const response = await fetch('https://api.perch.fit/v3/sets', {
             method: 'POST',
@@ -660,7 +628,6 @@
         document.getElementById('athleteSelector').style.display = 'flex';
       }
       
-      // Only show active users in dropdown (but use all users for rating calculations)
       let activeUsers = allUsers.filter(user => user.active === true);
       
       // If not admin, only show the logged-in athlete
@@ -679,20 +646,108 @@
       // Auto-select first athlete for better UX
       if (activeUsers.length > 0 && !dropdown.value) {
         dropdown.value = activeUsers[0].id;
-        displayAthleteProgress(activeUsers[0].id);
+        loadAndDisplayAthleteProgress(activeUsers[0].id);
       }
 
       dropdown.addEventListener('change', (e) => {
         const userId = parseInt(e.target.value);
         if (userId) {
-          displayAthleteProgress(userId);
+          loadAndDisplayAthleteProgress(userId);
         } else {
           hideProgress();
         }
       });
+      
+      // Add time range selector listener
+      const timeRangeSelector = document.getElementById('timeRangeSelector');
+      timeRangeSelector.addEventListener('change', () => {
+        const userId = parseInt(dropdown.value);
+        if (userId) {
+          loadAndDisplayAthleteProgress(userId);
+        }
+      });
     }
 
-    function displayAthleteProgress(userId) {
+    async function loadAndDisplayAthleteProgress(userId) {
+      try {
+        // Show loading state
+        document.getElementById('progressContent').classList.remove('active');
+        document.getElementById('noData').textContent = 'Loading athlete data...';
+        document.getElementById('noData').style.display = 'block';
+        
+        // Get selected time range
+        const timeRange = document.getElementById('timeRangeSelector').value;
+        
+        // Load sets only for this specific athlete with selected time range
+        const athleteSets = await fetchSetsForAthlete(userId, timeRange);
+        
+        // Display the progress
+        displayAthleteProgress(userId, athleteSets);
+        
+      } catch (error) {
+        console.error('Error loading athlete progress:', error);
+        document.getElementById('noData').textContent = 'Error loading athlete data. Please try again.';
+      }
+    }
+
+    async function fetchSetsForAthlete(userId, timeRange = 'all') {
+      try {
+        const exercises = Object.keys(allExercises).map(id => ({ 
+          id: parseInt(id), 
+          name: allExercises[id] 
+        }));
+        
+        let athleteSets = [];
+        const endTime = Math.floor(Date.now() / 1000);
+        let beginTime;
+        
+        // Calculate begin time based on selected range
+        switch(timeRange) {
+          case '1m':
+            beginTime = endTime - (30 * 24 * 60 * 60); // 1 month
+            break;
+          case '3m':
+            beginTime = endTime - (90 * 24 * 60 * 60); // 3 months
+            break;
+          case '6m':
+            beginTime = endTime - (180 * 24 * 60 * 60); // 6 months
+            break;
+          case '1y':
+            beginTime = endTime - (365 * 24 * 60 * 60); // 1 year
+            break;
+          case '2y':
+            beginTime = endTime - (2 * 365 * 24 * 60 * 60); // 2 years
+            break;
+          case '3y':
+            beginTime = endTime - (3 * 365 * 24 * 60 * 60); // 3 years
+            break;
+          case 'all':
+          default:
+            beginTime = 0; // All time
+            break;
+        }
+        
+        const timeRangeLabel = timeRange === 'all' ? 'all time' : timeRange;
+        console.log(`Loading sets for athlete ${userId} (${timeRangeLabel})...`);
+        
+        for (const exercise of exercises) {
+          const sets = await fetchSetsForExercise(exercise.id, beginTime, endTime, userId);
+          const setsWithName = sets.map(set => ({
+            ...set,
+            exercise_name: exercise.name
+          }));
+          athleteSets = athleteSets.concat(setsWithName);
+        }
+        
+        console.log(`Loaded ${athleteSets.length} total sets for athlete`);
+        return athleteSets;
+      } catch (error) {
+        console.error('Error fetching athlete sets:', error);
+        return [];
+      }
+    }
+
+    function displayAthleteProgress(userId, athleteSets) {
       const athlete = allUsers.find(u => u.id === userId);
       if (!athlete) return;
 
@@ -702,8 +757,6 @@
 
       document.getElementById('progressContent').classList.add('active');
       document.getElementById('noData').style.display = 'none';
-
-      const athleteSets = allSets.filter(set => set.user_id === userId);
       
       // Calculate overview stats
       const uniqueDates = new Set(athleteSets.map(s => new Date(s.created_at * 1000).toDateString()));
@@ -715,9 +768,10 @@
       document.getElementById('totalWorkouts').textContent = totalWorkouts;
       document.getElementById('lastWorkout').textContent = lastWorkout;
 
-      // Get athlete's pre-calculated Hornet Rating
-      const rating = athlete.overall_rating || '--';
-      document.getElementById('overallRating').textContent = rating;
+      // Calculate athlete rating from their own data
+      const athleteMetrics = calculateSingleAthleteMetrics(athlete, athleteSets);
+      const rating = calculateAthleteRating(athleteMetrics);
+      document.getElementById('overallRating').textContent = rating || '--';
 
       // Process exercise data
       const exerciseProgress = calculateExerciseProgress(athleteSets);
@@ -727,141 +781,39 @@
       displayAllExercisesProgress(exerciseProgress);
     }
 
-    // Calculate ratings for all users (same logic as Hornet Ratings page)
-    function calculateAllRatings() {
-      // First calculate metrics for all users
-      const athleteMetrics = allUsers.map(user => {
-        const userSets = allSets.filter(set => set.user_id === user.id);
-        return calculateSingleAthleteMetrics(user, userSets);
-      });
-
-      const genders = ['male', 'female'];
-      // Use all exercises for progress tracking
-      const exercises = EXERCISES_CONFIG.map(ex => ex.name);
-      const metrics = ['strength', 'power'];
+    // Simplified rating calculation based on athlete's own performance
+    function calculateAthleteRating(metrics) {
+      const exercises = Object.keys(metrics.exercises);
+      if (exercises.length === 0) return null;
       
-      // Store rating scales for each gender/exercise/metric combination
-      const ratingScales = {};
+      let totalScore = 0;
+      let count = 0;
       
-      // Calculate min/max/step for each exercise/metric within each gender
-      genders.forEach(gender => {
-        ratingScales[gender] = {};
-        const genderAthletes = athleteMetrics.filter(a => a.gender === gender);
+      // Simple scoring: normalize each metric and average
+      exercises.forEach(exerciseName => {
+        const exercise = metrics.exercises[exerciseName];
         
-        exercises.forEach(exercise => {
-          ratingScales[gender][exercise] = {};
-          
-          metrics.forEach(metric => {
-            const values = genderAthletes
-              .map(a => a.exercises[exercise]?.[metric])
-              .filter(v => v !== null && v !== undefined);
-            
-            if (values.length === 0) {
-              ratingScales[gender][exercise][metric] = null;
-              return;
-            }
-            
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            const range = maxValue - minValue;
-            const step = range > 0 ? range / 50 : 1;
-            
-            ratingScales[gender][exercise][metric] = { minValue, maxValue, step };
-          });
-        });
+        if (exercise.strength && exercise.strength > 0) {
+          totalScore += Math.min(100, exercise.strength / 3); // Rough normalization
+          count++;
+        }
         
-        // Add Vertical Jump rating scale
-        ratingScales[gender]['Vertical Jump'] = {};
-        const jumpHeights = genderAthletes
-          .map(a => a.exercises['Vertical Jump']?.jumpHeight)
-          .filter(v => v !== null && v !== undefined);
+        if (exercise.power && exercise.power > 0) {
+          totalScore += Math.min(100, exercise.power / 20); // Rough normalization
+          count++;
+        }
         
-        if (jumpHeights.length > 0) {
-          const minValue = Math.min(...jumpHeights);
-          const maxValue = Math.max(...jumpHeights);
-          const range = maxValue - minValue;
-          const step = range > 0 ? range / 50 : 1;
-          ratingScales[gender]['Vertical Jump']['jumpHeight'] = { minValue, maxValue, step };
-        } else {
-          ratingScales[gender]['Vertical Jump']['jumpHeight'] = null;
+        if (exercise.jumpHeight && exercise.jumpHeight > 0) {
+          totalScore += Math.min(100, exercise.jumpHeight * 3); // Rough normalization
+          count++;
         }
       });
       
-      // Calculate individual ratings for each athlete and store them on the user object
-      athleteMetrics.forEach(athleteMetric => {
-        const athlete = allUsers.find(u => u.id === athleteMetric.user_id);
-        if (!athlete) return;
-        
-        const gender = athleteMetric.gender;
-        
-        // Store individual exercise ratings
-        athlete.exerciseRatings = {};
-        
-        exercises.forEach(exercise => {
-          athlete.exerciseRatings[exercise] = {};
-          
-          metrics.forEach(metric => {
-            const value = athleteMetric.exercises[exercise]?.[metric];
-            const scale = ratingScales[gender]?.[exercise]?.[metric];
-            
-            if (value !== null && value !== undefined && scale) {
-              const { minValue, step } = scale;
-              const rawRating = 49 + ((value - minValue) / step);
-              athlete.exerciseRatings[exercise][metric] = Math.max(49, Math.min(99, Math.round(rawRating)));
-            } else {
-              athlete.exerciseRatings[exercise][metric] = null;
-            }
-          });
-        });
-        
-        // Add Vertical Jump rating
-        athlete.exerciseRatings['Vertical Jump'] = {};
-        const jumpHeight = athleteMetric.exercises['Vertical Jump']?.jumpHeight;
-        const jumpScale = ratingScales[gender]?.['Vertical Jump']?.['jumpHeight'];
-        
-        if (jumpHeight !== null && jumpHeight !== undefined && jumpScale) {
-          const { minValue, step } = jumpScale;
-          const rawRating = 49 + ((jumpHeight - minValue) / step);
-          athlete.exerciseRatings['Vertical Jump']['jumpHeight'] = Math.max(49, Math.min(99, Math.round(rawRating)));
-        } else {
-          athlete.exerciseRatings['Vertical Jump']['jumpHeight'] = null;
-        }
-        
-        // Calculate category ratings
-        const lowerBodyExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
-        
-        const lowerStrengthRatings = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL']
-          .map(ex => athlete.exerciseRatings[ex]?.strength)
-          .filter(r => r !== null && r !== undefined);
-        athlete.lower_body_strength_rating = lowerStrengthRatings.length > 0
-          ? Math.round(lowerStrengthRatings.reduce((sum, r) => sum + r, 0) / lowerStrengthRatings.length)
-          : 49;
-        
-        const lowerPowerRatings = lowerBodyExercises
-          .map(ex => athlete.exerciseRatings[ex]?.power)
-          .filter(r => r !== null && r !== undefined);
-        athlete.lower_body_power_rating = lowerPowerRatings.length > 0
-          ? Math.round(lowerPowerRatings.reduce((sum, r) => sum + r, 0) / lowerPowerRatings.length)
-          : 49;
-        
-        athlete.upper_body_strength_rating = athlete.exerciseRatings['Bench Press']?.strength || 49;
-        athlete.upper_body_power_rating = athlete.exerciseRatings['Bench Press']?.power || 49;
-        athlete.jump_rating = athlete.exerciseRatings['Vertical Jump']?.jumpHeight || 49;
-        
-        // Calculate overall rating (average of all 5 category ratings)
-        const categoryRatings = [
-          athlete.lower_body_strength_rating,
-          athlete.lower_body_power_rating,
-          athlete.upper_body_strength_rating,
-          athlete.upper_body_power_rating,
-          athlete.jump_rating
-        ].filter(r => r !== null && r !== undefined && r !== 49);
-        
-        athlete.overall_rating = categoryRatings.length > 0 
-          ? Math.round(categoryRatings.reduce((sum, r) => sum + r, 0) / categoryRatings.length)
-          : 49;
-      });
+      return count > 0 ? Math.round(totalScore / count) : null;
     }
+
+    // Calculate ratings for all users (same logic as Hornet Ratings page)
+    // REMOVED: calculateAllRatings() - Now calculating simple rating per athlete on demand
 
     async function fetchAthleteRating(userId) {
       try {
