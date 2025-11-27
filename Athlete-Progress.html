@@ -1237,6 +1237,11 @@
         }
       }
 
+      // Calculate max values for dynamic scaling
+      const maxWeight = Math.max(...data.sessions.map(s => s.weight || 0));
+      const maxMeanPower = Math.max(...data.sessions.map(s => s.meanPower || 0));
+      const maxPeakPower = Math.max(...data.sessions.map(s => s.peakPower || 0));
+
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -1289,7 +1294,7 @@
               },
               beginAtZero: true,
               min: 0,
-              max: 600
+              max: maxWeight + 25
             },
             'y-power': {
               type: 'linear',
@@ -1301,15 +1306,7 @@
               },
               beginAtZero: true,
               min: 0,
-              max: function(context) {
-                // Determine max based on which power type is being displayed
-                const exerciseConfig = EXERCISES_CONFIG.find(e => e.name === exerciseName);
-                if (exerciseConfig && exerciseConfig.bodyPower === 'Peak Power') {
-                  return 4000;
-                } else {
-                  return 2500;
-                }
-              },
+              max: Math.max(maxMeanPower, maxPeakPower) + 250,
               grid: {
                 drawOnChartArea: false,
               }
