@@ -1046,7 +1046,6 @@
     function updateAthleteDropdown() {
       const dropdown = document.getElementById('athleteDropdown');
       dropdown.innerHTML = '<option value="">Select an athlete...</option>';
-      
       // Check if user is authenticated
       const session = getAthleteSession();
       if (!session) {
@@ -1054,7 +1053,6 @@
         window.location.href = 'index.html';
         return;
       }
-      
       // Show/hide admin controls
       if (session.isAdmin) {
         document.getElementById('genderSelector').classList.remove('admin-only');
@@ -1062,32 +1060,31 @@
         document.getElementById('genderSelector').style.display = 'flex';
         document.getElementById('athleteSelector').style.display = 'flex';
       }
-      
-      // Filter athletes based on admin status
+      // Filter athletes based on admin status and selected sport
       let activeAthletes = allRatings.filter(athlete => 
-        athlete.active === true && athlete.gender === currentGender
+        athlete.active === true && athlete.gender === currentGender && (
+          !selectedSport || (
+            athleteInfo[athlete.user_id] &&
+            [1,2,3,4].some(i => (athleteInfo[athlete.user_id][`sport${i}`]||'').trim().toLowerCase() === selectedSport.trim().toLowerCase())
+          )
+        )
       );
-      
       // If not admin, only show the logged-in athlete
       if (!session.isAdmin) {
         activeAthletes = activeAthletes.filter(athlete => athlete.user_id === session.id);
       }
-      
       activeAthletes.sort((a, b) => a.name.localeCompare(b.name));
-      
       activeAthletes.forEach(athlete => {
         const option = document.createElement('option');
         option.value = athlete.user_id;
         option.textContent = athlete.name;
         dropdown.appendChild(option);
       });
-      
       // Auto-select first athlete for better UX
       if (activeAthletes.length > 0 && !selectedAthlete) {
         dropdown.value = activeAthletes[0].user_id;
         selectAthlete();
       }
-      
       console.log(`Updated dropdown with ${activeAthletes.length} active ${currentGender} athletes`);
       updateSportDropdown();
     }
@@ -1117,7 +1114,8 @@
     function selectSport() {
       const sportDropdown = document.getElementById('sportDropdown');
       selectedSport = sportDropdown.value;
-      // Optionally, filter athletes or update sport rating
+      updateAthleteDropdown();
+      // If an athlete is selected, update their ratings
       if (selectedAthlete) displayAthleteRatings(selectedAthlete);
     }
 
@@ -1138,21 +1136,14 @@
     }
 
     function displayAthleteRatings(athlete) {
-      // Set athlete name in overall title
       document.getElementById('overallTitle').textContent = `${athlete.name} Overall Hornet Rating`;
-      
-      // Show the rating display
       document.getElementById('ratingDisplay').style.display = 'block';
-      
-      // Update overall rating
       document.getElementById('overallScore').textContent = athlete.overall_rating;
-      
-      // Build details showing which exercises contributed to each rating
+      // Only use ratings for athletes in selected sport
       const lowerStrengthExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
       const lowerPowerExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
-      const upperBodyExercises = ['Bench Press'];
-      
-      // Helper function to build details string
+      const upperStrengthExercises = ['Bench Press'];
+      const upperPowerExercises = ['Bench Press'];
       const buildDetails = (exercises, metric) => {
         const ratings = exercises
           .map(ex => {
@@ -1160,63 +1151,26 @@
             return rating ? `${ex}: ${rating}` : null;
           })
           .filter(r => r !== null);
-        
         if (ratings.length === 0) return 'No reps attempted';
         return ratings.join(', ');
       };
-      
-      // Update individual ratings with exercise details
       updateRatingCard('lowerStrength', 
         athlete.lower_body_strength_rating !== 49 ? athlete.lower_body_strength_rating : 'N/A', 
         buildDetails(lowerStrengthExercises, 'strength'));
-      
       updateRatingCard('lowerPower', 
         athlete.lower_body_power_rating !== 49 ? athlete.lower_body_power_rating : 'N/A', 
         buildDetails(lowerPowerExercises, 'power'));
-      
       updateRatingCard('upperStrength', 
         athlete.upper_body_strength_rating !== 49 ? athlete.upper_body_strength_rating : 'N/A', 
-        buildDetails(upperBodyExercises, 'strength'));
-      
+        buildDetails(upperStrengthExercises, 'strength'));
       updateRatingCard('upperPower', 
         athlete.upper_body_power_rating !== 49 ? athlete.upper_body_power_rating : 'N/A', 
-        buildDetails(upperBodyExercises, 'power'));
-      
-      // Update jump rating
+        buildDetails(upperPowerExercises, 'power'));
       const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
       const jumpDetail = jumpHeight ? `Max height: ${jumpHeight.toFixed(1)} in` : 'No jumps attempted';
       updateRatingCard('jump', 
         athlete.jump_rating !== 49 ? athlete.jump_rating : 'N/A', 
         jumpDetail);
-      
-      // Sport-based rating
-      let sportRating = 'N/A';
-      let sportDetail = 'No sport selected';
-      let sportBar = 0;
-      let sportTitle = 'Sport Rating';
-      if (selectedSport && athleteInfo[athlete.user_id]) {
-        // Check if athlete plays selected sport
-        let playsSport = false;
-        for (let i = 1; i <= 4; i++) {
-          if ((athleteInfo[athlete.user_id][`sport${i}`] || '').trim().toLowerCase() === selectedSport.trim().toLowerCase()) {
-            playsSport = true;
-            break;
-          }
-        }
-        if (playsSport) {
-          // Use overall rating for now, or customize per sport
-          sportRating = athlete.overall_rating;
-          sportDetail = `Rating for ${selectedSport}`;
-          sportBar = ((sportRating - 49) / 50) * 100;
-          sportTitle = `${selectedSport} Rating`;
-        } else {
-          sportDetail = `Athlete does not play ${selectedSport}`;
-        }
-      }
-      document.getElementById('sportRatingScore').textContent = sportRating;
-      document.getElementById('sportRatingDetails').textContent = sportDetail;
-      document.getElementById('sportRatingBar').style.width = sportBar + '%';
-      document.getElementById('sportRatingTitle').textContent = sportTitle;
     }
 
     function updateRatingCard(prefix, rating, details) {
