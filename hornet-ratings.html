@@ -328,6 +328,9 @@
         <select class="athlete-dropdown" id="athleteDropdown" onchange="selectAthlete()">
           <option value="">Select an athlete...</option>
         </select>
+        <select class="athlete-dropdown" id="sportDropdown" style="min-width:180px; margin-left:12px;" onchange="selectSport()">
+          <option value="">Select sport...</option>
+        </select>
       </div>
 
       <!-- Loading/Error States -->
@@ -355,6 +358,18 @@
               <div class="rating-fill" id="lowerStrengthBar" style="width: 0%"></div>
             </div>
             <div class="rating-details" id="lowerStrengthDetails">Based on best weight from squats and deadlifts</div>
+          </div>
+          <!-- Sport-Based Rating -->
+          <div class="rating-card">
+            <div class="rating-header">
+              <span class="rating-icon">🏅</span>
+              <h3 class="rating-title" id="sportRatingTitle">Sport Rating</h3>
+            </div>
+            <div class="rating-score" id="sportRatingScore">--</div>
+            <div class="rating-bar">
+              <div class="rating-fill" id="sportRatingBar" style="width: 0%"></div>
+            </div>
+            <div class="rating-details" id="sportRatingDetails">Rating based on selected sport</div>
           </div>
 
           <!-- Lower Body Power -->
@@ -521,6 +536,8 @@
     let allRatings = {};
     let currentGender = 'male';
     let selectedAthlete = null;
+    let athleteInfo = {};
+    let selectedSport = '';
 
     // Exercise mapping based on your requirements
     const EXERCISE_CONFIG = {
@@ -1072,6 +1089,36 @@
       }
       
       console.log(`Updated dropdown with ${activeAthletes.length} active ${currentGender} athletes`);
+      updateSportDropdown();
+    }
+
+    function updateSportDropdown() {
+      const sportDropdown = document.getElementById('sportDropdown');
+      sportDropdown.innerHTML = '<option value="">Select sport...</option>';
+      
+      // Gather all sports from athleteInfo for current gender
+      let sportsSet = new Set();
+      allRatings.forEach(athlete => {
+        if (athlete.gender === currentGender && athleteInfo[athlete.user_id]) {
+          for (let i = 1; i <= 4; i++) {
+            const sport = athleteInfo[athlete.user_id][`sport${i}`];
+            if (sport && sport.trim()) sportsSet.add(sport.trim());
+          }
+        }
+      });
+      Array.from(sportsSet).sort().forEach(sport => {
+        const option = document.createElement('option');
+        option.value = sport;
+        option.textContent = sport;
+        sportDropdown.appendChild(option);
+      });
+    }
+
+    function selectSport() {
+      const sportDropdown = document.getElementById('sportDropdown');
+      selectedSport = sportDropdown.value;
+      // Optionally, filter athletes or update sport rating
+      if (selectedAthlete) displayAthleteRatings(selectedAthlete);
     }
 
     function selectAthlete() {
@@ -1087,6 +1134,7 @@
       if (selectedAthlete) {
         displayAthleteRatings(selectedAthlete);
       }
+      updateSportDropdown();
     }
 
     function displayAthleteRatings(athlete) {
@@ -1102,8 +1150,7 @@
       // Build details showing which exercises contributed to each rating
       const lowerStrengthExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
       const lowerPowerExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
-      const upperStrengthExercises = ['Bench Press'];
-      const upperPowerExercises = ['Bench Press'];
+      const upperBodyExercises = ['Bench Press'];
       
       // Helper function to build details string
       const buildDetails = (exercises, metric) => {
@@ -1129,11 +1176,11 @@
       
       updateRatingCard('upperStrength', 
         athlete.upper_body_strength_rating !== 49 ? athlete.upper_body_strength_rating : 'N/A', 
-        buildDetails(upperStrengthExercises, 'strength'));
+        buildDetails(upperBodyExercises, 'strength'));
       
       updateRatingCard('upperPower', 
         athlete.upper_body_power_rating !== 49 ? athlete.upper_body_power_rating : 'N/A', 
-        buildDetails(upperPowerExercises, 'power'));
+        buildDetails(upperBodyExercises, 'power'));
       
       // Update jump rating
       const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
@@ -1141,6 +1188,35 @@
       updateRatingCard('jump', 
         athlete.jump_rating !== 49 ? athlete.jump_rating : 'N/A', 
         jumpDetail);
+      
+      // Sport-based rating
+      let sportRating = 'N/A';
+      let sportDetail = 'No sport selected';
+      let sportBar = 0;
+      let sportTitle = 'Sport Rating';
+      if (selectedSport && athleteInfo[athlete.user_id]) {
+        // Check if athlete plays selected sport
+        let playsSport = false;
+        for (let i = 1; i <= 4; i++) {
+          if ((athleteInfo[athlete.user_id][`sport${i}`] || '').trim().toLowerCase() === selectedSport.trim().toLowerCase()) {
+            playsSport = true;
+            break;
+          }
+        }
+        if (playsSport) {
+          // Use overall rating for now, or customize per sport
+          sportRating = athlete.overall_rating;
+          sportDetail = `Rating for ${selectedSport}`;
+          sportBar = ((sportRating - 49) / 50) * 100;
+          sportTitle = `${selectedSport} Rating`;
+        } else {
+          sportDetail = `Athlete does not play ${selectedSport}`;
+        }
+      }
+      document.getElementById('sportRatingScore').textContent = sportRating;
+      document.getElementById('sportRatingDetails').textContent = sportDetail;
+      document.getElementById('sportRatingBar').style.width = sportBar + '%';
+      document.getElementById('sportRatingTitle').textContent = sportTitle;
     }
 
     function updateRatingCard(prefix, rating, details) {
@@ -1225,28 +1301,24 @@
         if (!requireAthleteAuth()) {
           return; // Will redirect to login
         }
-        
         console.log('Initializing Hornet Ratings page...');
-        
         // Start continuous 30-second progress animation
         const progressPromise = startContinuousProgress(30000, 'Calculating ratings...');
-        
         // Load all data
         console.log('Loading users...');
         allUsers = await loadAllUsers();
-        
         console.log('Loading exercises...');
         allExercises = await loadExercises();
-        
         console.log('Loading sets data...');
         allSets = await loadSetsData(allExercises);
-        
         console.log('Calculating athlete metrics...');
         const athleteMetrics = calculateAthleteMetrics(allUsers, allSets);
-        
         console.log('Calculating ratings...');
         allRatings = calculateRatings(athleteMetrics);
-        
+        // Load athlete info from localStorage
+        try {
+          athleteInfo = JSON.parse(localStorage.getItem('athlete_info') || '{}');
+        } catch (e) { athleteInfo = {}; }
         console.log(`Calculated ratings for ${allRatings.length} athletes`);
         
         // Data is ready - jump to 100%
@@ -1257,7 +1329,7 @@
         
         // Update UI
         updateAthleteDropdown();
-        
+        updateSportDropdown();
         await new Promise(resolve => setTimeout(resolve, 500));
         hideLoading();
         
