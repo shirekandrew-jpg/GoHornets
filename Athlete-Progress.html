@@ -1243,10 +1243,10 @@
       const maxPeakPower = Math.max(...data.sessions.map(s => s.peakPower || 0));
 
       // Round up to clean increments
-      // For weight, round up to nearest 25
-      const weightMax = Math.ceil((maxWeight + 25) / 25) * 25;
-      // For power, round up to nearest 100
-      const powerMax = Math.ceil((Math.max(maxMeanPower, maxPeakPower) + 250) / 100) * 100;
+      // For weight, round up to nearest 50 (ticks will go by 50)
+      const weightMax = Math.ceil((maxWeight + 25) / 50) * 50;
+      // For power, round up to nearest 250 (ticks will go by 250)
+      const powerMax = Math.ceil((Math.max(maxMeanPower, maxPeakPower) + 250) / 250) * 250;
 
       new Chart(ctx, {
         type: 'line',
@@ -1300,7 +1300,10 @@
               },
               beginAtZero: true,
               min: 0,
-              max: weightMax
+              max: weightMax,
+              ticks: {
+                stepSize: 50
+              }
             },
             'y-power': {
               type: 'linear',
@@ -1313,6 +1316,9 @@
               beginAtZero: true,
               min: 0,
               max: powerMax,
+              ticks: {
+                stepSize: 250
+              },
               grid: {
                 drawOnChartArea: false,
               }
