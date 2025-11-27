@@ -359,18 +359,6 @@
             </div>
             <div class="rating-details" id="lowerStrengthDetails">Based on best weight from squats and deadlifts</div>
           </div>
-          <!-- Sport-Based Rating -->
-          <div class="rating-card">
-            <div class="rating-header">
-              <span class="rating-icon">🏅</span>
-              <h3 class="rating-title" id="sportRatingTitle">Sport Rating</h3>
-            </div>
-            <div class="rating-score" id="sportRatingScore">--</div>
-            <div class="rating-bar">
-              <div class="rating-fill" id="sportRatingBar" style="width: 0%"></div>
-            </div>
-            <div class="rating-details" id="sportRatingDetails">Rating based on selected sport</div>
-          </div>
 
           <!-- Lower Body Power -->
           <div class="rating-card">
@@ -1060,14 +1048,9 @@
         document.getElementById('genderSelector').style.display = 'flex';
         document.getElementById('athleteSelector').style.display = 'flex';
       }
-      // Filter athletes based on admin status and selected sport
+      // Filter athletes based on admin status
       let activeAthletes = allRatings.filter(athlete => 
-        athlete.active === true && athlete.gender === currentGender && (
-          !selectedSport || (
-            athleteInfo[athlete.user_id] &&
-            [1,2,3,4].some(i => (athleteInfo[athlete.user_id][`sport${i}`]||'').trim().toLowerCase() === selectedSport.trim().toLowerCase())
-          )
-        )
+        athlete.active === true && athlete.gender === currentGender
       );
       // If not admin, only show the logged-in athlete
       if (!session.isAdmin) {
@@ -1086,23 +1069,18 @@
         selectAthlete();
       }
       console.log(`Updated dropdown with ${activeAthletes.length} active ${currentGender} athletes`);
-      updateSportDropdown();
     }
 
     function updateSportDropdown() {
       const sportDropdown = document.getElementById('sportDropdown');
       sportDropdown.innerHTML = '<option value="">Select sport...</option>';
-      
-      // Gather all sports from athleteInfo for current gender
+      // Only show sports for selected athlete
+      if (!selectedAthlete || !athleteInfo[selectedAthlete.user_id]) return;
       let sportsSet = new Set();
-      allRatings.forEach(athlete => {
-        if (athlete.gender === currentGender && athleteInfo[athlete.user_id]) {
-          for (let i = 1; i <= 4; i++) {
-            const sport = athleteInfo[athlete.user_id][`sport${i}`];
-            if (sport && sport.trim()) sportsSet.add(sport.trim());
-          }
-        }
-      });
+      for (let i = 1; i <= 4; i++) {
+        const sport = athleteInfo[selectedAthlete.user_id][`sport${i}`];
+        if (sport && sport.trim()) sportsSet.add(sport.trim());
+      }
       Array.from(sportsSet).sort().forEach(sport => {
         const option = document.createElement('option');
         option.value = sport;
@@ -1114,8 +1092,6 @@
     function selectSport() {
       const sportDropdown = document.getElementById('sportDropdown');
       selectedSport = sportDropdown.value;
-      updateAthleteDropdown();
-      // If an athlete is selected, update their ratings
       if (selectedAthlete) displayAthleteRatings(selectedAthlete);
     }
 
@@ -1129,17 +1105,17 @@
       }
       
       selectedAthlete = allRatings.find(athlete => athlete.user_id === userId);
+      updateSportDropdown();
       if (selectedAthlete) {
         displayAthleteRatings(selectedAthlete);
       }
-      updateSportDropdown();
     }
 
     function displayAthleteRatings(athlete) {
       document.getElementById('overallTitle').textContent = `${athlete.name} Overall Hornet Rating`;
       document.getElementById('ratingDisplay').style.display = 'block';
       document.getElementById('overallScore').textContent = athlete.overall_rating;
-      // Only use ratings for athletes in selected sport
+      // Only use ratings for selected athlete and sport
       const lowerStrengthExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
       const lowerPowerExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
       const upperStrengthExercises = ['Bench Press'];
