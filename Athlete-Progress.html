@@ -1260,12 +1260,15 @@
       const maxWeight = Math.max(...data.sessions.map(s => s.weight || 0));
       const maxMeanPower = Math.max(...data.sessions.map(s => s.meanPower || 0));
       const maxPeakPower = Math.max(...data.sessions.map(s => s.peakPower || 0));
+      const maxHeight = Math.max(...data.sessions.map(s => s.height || 0));
 
       // Round up to clean increments
       // For weight, round up to nearest 50 (ticks will go by 50)
       const weightMax = Math.ceil((maxWeight + 25) / 50) * 50;
       // For power, round up to nearest 250 (ticks will go by 250)
       const powerMax = Math.ceil((Math.max(maxMeanPower, maxPeakPower) + 250) / 250) * 250;
+      // For vertical jump height, round up to nearest whole number (add 1 inch above max)
+      const heightMax = Math.ceil(maxHeight + 1);
 
       new Chart(ctx, {
         type: 'line',
@@ -1302,7 +1305,9 @@
           },
           scales: isJump ? {
             y: {
-              beginAtZero: false,
+              beginAtZero: true,
+              min: 0,
+              max: heightMax,
               title: {
                 display: true,
                 text: 'Height (in)'
