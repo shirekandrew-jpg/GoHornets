@@ -922,15 +922,15 @@
             metrics.exercises[exerciseName].strength = set.weight;
           }
 
-          // Calculate power based on exercise type
+          // Calculate power based on bodyPower property from exercises.json
           let power = null;
-          if (exerciseConfig.movement_pattern === 'JUMP') {
-            // Use peak power for jumps
+          if (exerciseConfig.bodyPower === 'Peak Power') {
+            // Use peak power
             if (rep.concentric_peak_power_per_mass_z) {
               power = convertPeakPowerToWatts(rep.concentric_peak_power_per_mass_z, set.weight);
             }
-          } else {
-            // Use mean power for other exercises
+          } else if (exerciseConfig.bodyPower === 'Mean Power') {
+            // Use mean power
             if (rep.concentric_mean_velocity_z) {
               power = convertMeanPowerToWatts(rep.concentric_mean_velocity_z * set.weight);
             }
@@ -1198,7 +1198,7 @@
           fill: true
         });
       } else {
-        // For other exercises, show weight, mean power, and peak power
+        // For other exercises, show weight and appropriate power metric based on bodyPower property
         datasets.push({
           label: 'Weight (lbs)',
           data: data.sessions.map(s => s.weight),
@@ -1209,7 +1209,10 @@
           yAxisID: 'y-weight'
         });
 
-        if (data.sessions.some(s => s.meanPower)) {
+        // Get exercise config to check bodyPower property
+        const exerciseConfig = EXERCISES_CONFIG.find(e => e.name === exerciseName);
+        
+        if (exerciseConfig && exerciseConfig.bodyPower === 'Mean Power' && data.sessions.some(s => s.meanPower)) {
           datasets.push({
             label: 'Mean Power - Avg Top 4 (W)',
             data: data.sessions.map(s => s.meanPower),
@@ -1221,7 +1224,7 @@
           });
         }
 
-        if (data.sessions.some(s => s.peakPower)) {
+        if (exerciseConfig && exerciseConfig.bodyPower === 'Peak Power' && data.sessions.some(s => s.peakPower)) {
           datasets.push({
             label: 'Peak Power - Avg Top 4 (W)',
             data: data.sessions.map(s => s.peakPower),

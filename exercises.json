@@ -19,7 +19,7 @@
       "bodySegment": "Lower",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Peak Power",
       "upperBodyStrength": "",
       "upperBodyPower": "",
       "jump": "Inches"
@@ -79,7 +79,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -91,7 +91,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Pull",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -115,7 +115,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -199,7 +199,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -211,7 +211,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -223,7 +223,7 @@
       "bodySegment": "Lower",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Peak Power",
       "upperBodyStrength": "",
       "upperBodyPower": "",
       "jump": "Inches"
@@ -247,7 +247,7 @@
       "bodySegment": "Lower",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "",
       "upperBodyPower": "",
       "jump": ""
@@ -319,7 +319,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -427,7 +427,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -463,7 +463,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -475,7 +475,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -499,7 +499,7 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Mean Power",
       "upperBodyStrength": "LBS",
       "upperBodyPower": "Mean Power",
       "jump": ""
@@ -535,9 +535,9 @@
       "bodySegment": "Upper",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Peak Power",
       "upperBodyStrength": "LBS",
-      "upperBodyPower": "Mean Power",
+      "upperBodyPower": "Peak Power",
       "jump": ""
     },
     {
@@ -715,7 +715,7 @@
       "bodySegment": "Lower",
       "appliedForce": "Push",
       "lowerBodyStrength": "",
-      "bodyPower": "",
+      "bodyPower": "Peak Power",
       "upperBodyStrength": "",
       "upperBodyPower": "",
       "jump": "Inches"
