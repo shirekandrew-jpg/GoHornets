@@ -1114,39 +1114,116 @@
     function displayAthleteRatings(athlete) {
       document.getElementById('overallTitle').textContent = `${athlete.name} Overall Hornet Rating`;
       document.getElementById('ratingDisplay').style.display = 'block';
-      document.getElementById('overallScore').textContent = athlete.overall_rating;
-      // Only use ratings for selected athlete and sport
+      // If a sport is selected, recalculate ratings using only athletes who play that sport
+      let sportAthletes = allRatings;
+      if (selectedSport) {
+        sportAthletes = allRatings.filter(a => {
+          if (!athleteInfo[a.user_id]) return false;
+          for (let i = 1; i <= 4; i++) {
+            if ((athleteInfo[a.user_id][`sport${i}`] || '').trim().toLowerCase() === selectedSport.trim().toLowerCase()) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
+      // Recalculate rating scales for this sport
+      const gender = athlete.gender;
+      const exercises = EXERCISES_CONFIG.filter(ex => ex.hornetRating === true).map(ex => ex.name);
+      const metrics = ['strength', 'power'];
+      const ratingScales = {};
+      ratingScales[gender] = {};
+      exercises.forEach(exercise => {
+        ratingScales[gender][exercise] = {};
+        metrics.forEach(metric => {
+          const values = sportAthletes
+            .filter(a => a.gender === gender)
+            .map(a => a.exercises[exercise]?.[metric])
+            .filter(v => v !== null && v !== undefined);
+          if (values.length === 0) {
+            ratingScales[gender][exercise][metric] = null;
+            return;
+          }
+          const minValue = Math.min(...values);
+          const maxValue = Math.max(...values);
+          const range = maxValue - minValue;
+          const step = range > 0 ? range / 50 : 1;
+          ratingScales[gender][exercise][metric] = { minValue, maxValue, step };
+        });
+      });
+      // Vertical Jump
+      ratingScales[gender]['Vertical Jump'] = {};
+      const jumpHeights = sportAthletes
+        .filter(a => a.gender === gender)
+        .map(a => a.exercises['Vertical Jump']?.jumpHeight)
+        .filter(v => v !== null && v !== undefined);
+      if (jumpHeights.length > 0) {
+        const minValue = Math.min(...jumpHeights);
+        const maxValue = Math.max(...jumpHeights);
+        const range = maxValue - minValue;
+        const step = range > 0 ? range / 50 : 1;
+        ratingScales[gender]['Vertical Jump']['jumpHeight'] = { minValue, maxValue, step };
+      } else {
+        ratingScales[gender]['Vertical Jump']['jumpHeight'] = null;
+      }
+      // Calculate ratings for selected athlete using sport-specific scales
+      const exerciseRatings = {};
+      exercises.forEach(exercise => {
+        exerciseRatings[exercise] = {};
+        metrics.forEach(metric => {
+          const value = athlete.exercises[exercise]?.[metric];
+          const scale = ratingScales[gender]?.[exercise]?.[metric];
+          if (value !== null && value !== undefined && scale) {
+            const { minValue, step } = scale;
+            const rawRating = 49 + ((value - minValue) / step);
+            exerciseRatings[exercise][metric] = Math.max(49, Math.min(99, Math.round(rawRating)));
+          } else {
+            exerciseRatings[exercise][metric] = null;
+          }
+        });
+      });
+      // Vertical Jump
+      exerciseRatings['Vertical Jump'] = {};
+      const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
+      const jumpScale = ratingScales[gender]?.['Vertical Jump']?.['jumpHeight'];
+      if (jumpHeight !== null && jumpHeight !== undefined && jumpScale) {
+        const { minValue, step } = jumpScale;
+        const rawRating = 49 + ((jumpHeight - minValue) / step);
+        exerciseRatings['Vertical Jump']['jumpHeight'] = Math.max(49, Math.min(99, Math.round(rawRating)));
+      } else {
+        exerciseRatings['Vertical Jump']['jumpHeight'] = null;
+      }
+      // Category ratings
       const lowerStrengthExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL'];
       const lowerPowerExercises = ['Back Squat', 'Front Squat', 'Trap Bar Deadlift', 'Bar RDL', 'Trap Bar Jump'];
       const upperStrengthExercises = ['Bench Press'];
       const upperPowerExercises = ['Bench Press'];
+      const lowerStrengthRatings = lowerStrengthExercises.map(ex => exerciseRatings[ex]?.strength).filter(r => r !== null && r !== undefined);
+      const lowerPowerRatings = lowerPowerExercises.map(ex => exerciseRatings[ex]?.power).filter(r => r !== null && r !== undefined);
+      const upperStrengthRating = exerciseRatings['Bench Press']?.strength || 49;
+      const upperPowerRating = exerciseRatings['Bench Press']?.power || 49;
+      const jumpRating = exerciseRatings['Vertical Jump']?.jumpHeight || 49;
+      const lower_body_strength_rating = lowerStrengthRatings.length > 0 ? Math.round(lowerStrengthRatings.reduce((sum, r) => sum + r, 0) / lowerStrengthRatings.length) : 49;
+      const lower_body_power_rating = lowerPowerRatings.length > 0 ? Math.round(lowerPowerRatings.reduce((sum, r) => sum + r, 0) / lowerPowerRatings.length) : 49;
+      // Overall rating
+      const categoryRatings = [lower_body_strength_rating, lower_body_power_rating, upperStrengthRating, upperPowerRating, jumpRating].filter(r => r !== null && r !== undefined && r !== 49);
+      const overall_rating = categoryRatings.length > 0 ? Math.round(categoryRatings.reduce((sum, r) => sum + r, 0) / categoryRatings.length) : 49;
+      document.getElementById('overallScore').textContent = overall_rating;
+      // Details
       const buildDetails = (exercises, metric) => {
-        const ratings = exercises
-          .map(ex => {
-            const rating = athlete.exerciseRatings[ex]?.[metric];
-            return rating ? `${ex}: ${rating}` : null;
-          })
-          .filter(r => r !== null);
+        const ratings = exercises.map(ex => {
+          const rating = exerciseRatings[ex]?.[metric];
+          return rating ? `${ex}: ${rating}` : null;
+        }).filter(r => r !== null);
         if (ratings.length === 0) return 'No reps attempted';
         return ratings.join(', ');
       };
-      updateRatingCard('lowerStrength', 
-        athlete.lower_body_strength_rating !== 49 ? athlete.lower_body_strength_rating : 'N/A', 
-        buildDetails(lowerStrengthExercises, 'strength'));
-      updateRatingCard('lowerPower', 
-        athlete.lower_body_power_rating !== 49 ? athlete.lower_body_power_rating : 'N/A', 
-        buildDetails(lowerPowerExercises, 'power'));
-      updateRatingCard('upperStrength', 
-        athlete.upper_body_strength_rating !== 49 ? athlete.upper_body_strength_rating : 'N/A', 
-        buildDetails(upperStrengthExercises, 'strength'));
-      updateRatingCard('upperPower', 
-        athlete.upper_body_power_rating !== 49 ? athlete.upper_body_power_rating : 'N/A', 
-        buildDetails(upperPowerExercises, 'power'));
-      const jumpHeight = athlete.exercises['Vertical Jump']?.jumpHeight;
+      updateRatingCard('lowerStrength', lower_body_strength_rating !== 49 ? lower_body_strength_rating : 'N/A', buildDetails(lowerStrengthExercises, 'strength'));
+      updateRatingCard('lowerPower', lower_body_power_rating !== 49 ? lower_body_power_rating : 'N/A', buildDetails(lowerPowerExercises, 'power'));
+      updateRatingCard('upperStrength', upperStrengthRating !== 49 ? upperStrengthRating : 'N/A', buildDetails(upperStrengthExercises, 'strength'));
+      updateRatingCard('upperPower', upperPowerRating !== 49 ? upperPowerRating : 'N/A', buildDetails(upperPowerExercises, 'power'));
       const jumpDetail = jumpHeight ? `Max height: ${jumpHeight.toFixed(1)} in` : 'No jumps attempted';
-      updateRatingCard('jump', 
-        athlete.jump_rating !== 49 ? athlete.jump_rating : 'N/A', 
-        jumpDetail);
+      updateRatingCard('jump', jumpRating !== 49 ? jumpRating : 'N/A', jumpDetail);
     }
 
     function updateRatingCard(prefix, rating, details) {
