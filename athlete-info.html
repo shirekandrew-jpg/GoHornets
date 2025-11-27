@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Athlete Info Management</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+    h2 { color: #d4af37; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; background: #222; border-radius: 12px; overflow: hidden; }
+    th, td { padding: 12px; border-bottom: 1px solid #444; color: #fff; }
+    th { background: #333; color: #d4af37; text-transform: uppercase; font-size: 0.9em; }
+    tr:hover { background: #2d2d2d; }
+    input, select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d4af37; background: #111; color: #fff; }
+    .save-btn { padding: 8px 16px; background: #d4af37; color: #222; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; }
+    .save-btn:hover { background: #ffc72c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>All Athletes Info</h2>
+    <table id="athleteTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Graduation Class</th>
+          <th>Sport 1</th>
+          <th>Sport 2</th>
+          <th>Sport 3</th>
+          <th>Sport 4</th>
+          <th>Save</th>
+        </tr>
+      </thead>
+      <tbody id="athleteTableBody">
+        <!-- Rows will be populated by JS -->
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const API_BASE = 'https://api.perch.fit/v2';
+    const ORG_ID = 7617;
+    const TOKEN = '31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
+    let perchAthletes = [];
+    let athleteInfo = {};
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadPerchAthletes();
+      loadAthleteInfo();
+      renderTable();
+    });
+    async function loadPerchAthletes() {
+      let allUsers = [];
+      let nextToken = null;
+      let hasMore = true;
+      while (hasMore) {
+        const body = { limit: 500, group_id: ORG_ID, active: true };
+        if (nextToken) body.next_token = nextToken;
+        const response = await fetch(`${API_BASE}/users`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json', 'accept': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) break;
+        const data = await response.json();
+        allUsers = allUsers.concat(data.data || []);
+        if (data.truncated && data.next_token) nextToken = data.next_token; else hasMore = false;
+      }
+      perchAthletes = allUsers.sort((a, b) => (`${a.first_name} ${a.last_name}`).localeCompare(`${b.first_name} ${b.last_name}`));
+    }
+    function loadAthleteInfo() {
+      const stored = localStorage.getItem('athlete_info');
+      athleteInfo = stored ? JSON.parse(stored) : {};
+    }
+    function saveAthleteInfo() {
+      localStorage.setItem('athlete_info', JSON.stringify(athleteInfo));
+    }
+    function renderTable() {
+      const tbody = document.getElementById('athleteTableBody');
+      tbody.innerHTML = '';
+      perchAthletes.forEach(athlete => {
+        const id = athlete.id;
+        const info = athleteInfo[id] || {};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${athlete.first_name} ${athlete.last_name}</td>
+          <td><input type="email" value="${info.email || athlete.email || ''}" id="email-${id}"></td>
+          <td><input type="text" value="${info.gradClass || ''}" id="gradClass-${id}" placeholder="YYYY"></td>
+          <td><input type="text" value="${info.sport1 || ''}" id="sport1-${id}" placeholder="Sport 1"></td>
+          <td><input type="text" value="${info.sport2 || ''}" id="sport2-${id}" placeholder="Sport 2"></td>
+          <td><input type="text" value="${info.sport3 || ''}" id="sport3-${id}" placeholder="Sport 3"></td>
+          <td><input type="text" value="${info.sport4 || ''}" id="sport4-${id}" placeholder="Sport 4"></td>
+          <td><button class="save-btn" onclick="saveRow(${id})">Save</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    window.saveRow = function(id) {
+      athleteInfo[id] = {
+        email: document.getElementById(`email-${id}`).value,
+        gradClass: document.getElementById(`gradClass-${id}`).value,
+        sport1: document.getElementById(`sport1-${id}`).value,
+        sport2: document.getElementById(`sport2-${id}`).value,
+        sport3: document.getElementById(`sport3-${id}`).value,
+        sport4: document.getElementById(`sport4-${id}`).value
+      };
+      saveAthleteInfo();
+      alert('Saved!');
+    }
+  </script>
+</body>
+</html>
