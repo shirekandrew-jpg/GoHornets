@@ -1128,24 +1128,31 @@
         const data = progress[exerciseName];
         const isJump = exerciseName === 'Vertical Jump';
         
-        // Calculate improvement based on exercise type
-        let improvement = 0;
+        // Get exercise config to determine power type
+        const exerciseConfig = EXERCISES_CONFIG.find(e => e.name === exerciseName);
+        
+        // Determine best power label and value based on bodyPower property
         let bestLabel = '';
         let bestValue = '';
+        let bestWeightValue = '';
         
         if (isJump) {
-          improvement = data.first.height && data.best.height
-            ? ((data.best.height - data.first.height) / data.first.height * 100).toFixed(1)
-            : 0;
           bestLabel = 'Best Height';
           bestValue = data.best.height ? data.best.height.toFixed(1) + ' in' : 'N/A';
+          bestWeightValue = 'N/A';
         } else {
-          // Use mean power (avg top 4) for improvement calculation
-          improvement = data.first.meanPower && data.best.meanPower
-            ? ((data.best.meanPower - data.first.meanPower) / data.first.meanPower * 100).toFixed(1)
-            : 0;
-          bestLabel = 'Best Power (Avg Top 4)';
-          bestValue = data.best.meanPower ? data.best.meanPower.toFixed(0) + ' W' : 'N/A';
+          // Determine which power metric to show
+          if (exerciseConfig && exerciseConfig.bodyPower === 'Peak Power') {
+            bestLabel = 'Best Peak Power (Avg Top 4)';
+            bestValue = data.best.peakPower ? data.best.peakPower.toFixed(0) + ' W' : 'N/A';
+          } else if (exerciseConfig && exerciseConfig.bodyPower === 'Mean Power') {
+            bestLabel = 'Best Mean Power (Avg Top 4)';
+            bestValue = data.best.meanPower ? data.best.meanPower.toFixed(0) + ' W' : 'N/A';
+          } else {
+            bestLabel = 'Best Power (Avg Top 4)';
+            bestValue = 'N/A';
+          }
+          bestWeightValue = data.best.weight ? data.best.weight.toFixed(0) + ' lbs' : 'N/A';
         }
 
         const card = document.createElement('div');
@@ -1162,12 +1169,8 @@
               <div class="metric-stat-value">${bestValue}</div>
             </div>
             <div class="metric-stat">
-              <div class="metric-stat-label">Sessions</div>
-              <div class="metric-stat-value">${data.sessions.length}</div>
-            </div>
-            <div class="metric-stat">
-              <div class="metric-stat-label">Improvement</div>
-              <div class="metric-stat-value ${improvement > 0 ? 'improvement' : improvement < 0 ? 'decline' : ''}">${improvement > 0 ? '+' : ''}${improvement}%</div>
+              <div class="metric-stat-label">Best Weight</div>
+              <div class="metric-stat-value">${bestWeightValue}</div>
             </div>
           </div>
         `;
