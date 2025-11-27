@@ -1287,7 +1287,9 @@
                 display: true,
                 text: 'Weight (lbs)'
               },
-              beginAtZero: false
+              beginAtZero: true,
+              min: 0,
+              max: 600
             },
             'y-power': {
               type: 'linear',
@@ -1297,7 +1299,17 @@
                 display: true,
                 text: 'Power (W)'
               },
-              beginAtZero: false,
+              beginAtZero: true,
+              min: 0,
+              max: function(context) {
+                // Determine max based on which power type is being displayed
+                const exerciseConfig = EXERCISES_CONFIG.find(e => e.name === exerciseName);
+                if (exerciseConfig && exerciseConfig.bodyPower === 'Peak Power') {
+                  return 4000;
+                } else {
+                  return 2500;
+                }
+              },
               grid: {
                 drawOnChartArea: false,
               }
