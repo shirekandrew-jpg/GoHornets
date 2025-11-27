@@ -960,7 +960,7 @@
         if (!progress[exerciseName]) {
           progress[exerciseName] = {
             sessions: [], // Array of session objects with date, weight, meanPower, peakPower
-            best: { weight: null, meanPower: null, peakPower: null, height: null },
+            best: { weight: null, meanPower: null, peakPower: null, height: null, weightAtBestMeanPower: null, weightAtBestPeakPower: null },
             first: { weight: null, meanPower: null, peakPower: null, height: null }
           };
         }
@@ -1073,9 +1073,11 @@
               }
               if (sessionMeanPower && (!progress[exerciseName].best.meanPower || sessionMeanPower > progress[exerciseName].best.meanPower)) {
                 progress[exerciseName].best.meanPower = sessionMeanPower;
+                progress[exerciseName].best.weightAtBestMeanPower = sessionWeight;
               }
               if (sessionPeakPower && (!progress[exerciseName].best.peakPower || sessionPeakPower > progress[exerciseName].best.peakPower)) {
                 progress[exerciseName].best.peakPower = sessionPeakPower;
+                progress[exerciseName].best.weightAtBestPeakPower = sessionWeight;
               }
             }
           }
@@ -1134,44 +1136,58 @@
         // Determine best power label and value based on bodyPower property
         let bestLabel = '';
         let bestValue = '';
-        let bestWeightValue = '';
+        let weightLabel = '';
+        let weightValue = '';
         
         if (isJump) {
           bestLabel = 'Best Height';
           bestValue = data.best.height ? data.best.height.toFixed(1) + ' in' : 'N/A';
-          bestWeightValue = 'N/A';
+          weightLabel = '';
+          weightValue = '';
         } else {
           // Determine which power metric to show
           if (exerciseConfig && exerciseConfig.bodyPower === 'Peak Power') {
             bestLabel = 'Best Peak Power (Avg Top 4)';
             bestValue = data.best.peakPower ? data.best.peakPower.toFixed(0) + ' W' : 'N/A';
+            weightLabel = 'Weight @ Best Power';
+            weightValue = data.best.weightAtBestPeakPower ? data.best.weightAtBestPeakPower.toFixed(0) + ' lbs' : 'N/A';
           } else if (exerciseConfig && exerciseConfig.bodyPower === 'Mean Power') {
             bestLabel = 'Best Mean Power (Avg Top 4)';
             bestValue = data.best.meanPower ? data.best.meanPower.toFixed(0) + ' W' : 'N/A';
+            weightLabel = 'Weight @ Best Power';
+            weightValue = data.best.weightAtBestMeanPower ? data.best.weightAtBestMeanPower.toFixed(0) + ' lbs' : 'N/A';
           } else {
             bestLabel = 'Best Power (Avg Top 4)';
             bestValue = 'N/A';
+            weightLabel = 'Best Weight';
+            weightValue = data.best.weight ? data.best.weight.toFixed(0) + ' lbs' : 'N/A';
           }
-          bestWeightValue = data.best.weight ? data.best.weight.toFixed(0) + ' lbs' : 'N/A';
         }
 
         const card = document.createElement('div');
         card.className = 'exercise-card';
         const chartId = `chart-${exerciseName.replace(/\s+/g, '-').toLowerCase()}`;
+        
+        let metricsHTML = `
+          <div class="metric-stat">
+            <div class="metric-stat-label">${bestLabel}</div>
+            <div class="metric-stat-value">${bestValue}</div>
+          </div>`;
+        
+        if (weightLabel) {
+          metricsHTML += `
+          <div class="metric-stat">
+            <div class="metric-stat-label">${weightLabel}</div>
+            <div class="metric-stat-value">${weightValue}</div>
+          </div>`;
+        }
+        
         card.innerHTML = `
           <div class="exercise-name">${exerciseName}</div>
           <div class="chart-container">
             <canvas id="${chartId}"></canvas>
           </div>
-          <div class="metric-summary">
-            <div class="metric-stat">
-              <div class="metric-stat-label">${bestLabel}</div>
-              <div class="metric-stat-value">${bestValue}</div>
-            </div>
-            <div class="metric-stat">
-              <div class="metric-stat-label">Best Weight</div>
-              <div class="metric-stat-value">${bestWeightValue}</div>
-            </div>
+          <div class="metric-summary">${metricsHTML}
           </div>
         `;
         container.appendChild(card);
