@@ -19,7 +19,9 @@
 </head>
 <body>
   <div class="container">
+    <a href="dashboard.html" class="back-button" style="margin-bottom: 24px; display: inline-block;">← Back to Home</a>
     <h2>All Athletes Info</h2>
+    <button class="save-btn" style="margin-bottom: 18px;" onclick="saveAllRows()">Save All</button>
     <table id="athleteTable">
       <thead>
         <tr>
@@ -30,7 +32,6 @@
           <th>Sport 2</th>
           <th>Sport 3</th>
           <th>Sport 4</th>
-          <th>Save</th>
         </tr>
       </thead>
       <tbody id="athleteTableBody">
@@ -90,22 +91,24 @@
           <td><input type="text" value="${info.sport2 || ''}" id="sport2-${id}" placeholder="Sport 2"></td>
           <td><input type="text" value="${info.sport3 || ''}" id="sport3-${id}" placeholder="Sport 3"></td>
           <td><input type="text" value="${info.sport4 || ''}" id="sport4-${id}" placeholder="Sport 4"></td>
-          <td><button class="save-btn" onclick="saveRow(${id})">Save</button></td>
         `;
         tbody.appendChild(tr);
       });
     }
-    window.saveRow = function(id) {
-      athleteInfo[id] = {
-        email: document.getElementById(`email-${id}`).value,
-        gradClass: document.getElementById(`gradClass-${id}`).value,
-        sport1: document.getElementById(`sport1-${id}`).value,
-        sport2: document.getElementById(`sport2-${id}`).value,
-        sport3: document.getElementById(`sport3-${id}`).value,
-        sport4: document.getElementById(`sport4-${id}`).value
-      };
+    window.saveAllRows = function() {
+      perchAthletes.forEach(athlete => {
+        const id = athlete.id;
+        athleteInfo[id] = {
+          email: document.getElementById(`email-${id}`).value,
+          gradClass: document.getElementById(`gradClass-${id}`).value,
+          sport1: document.getElementById(`sport1-${id}`).value,
+          sport2: document.getElementById(`sport2-${id}`).value,
+          sport3: document.getElementById(`sport3-${id}`).value,
+          sport4: document.getElementById(`sport4-${id}`).value
+        };
+      });
       saveAthleteInfo();
-      alert('Saved!');
+      alert('All athlete info saved!');
     }
   </script>
 </body>
