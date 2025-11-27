@@ -1074,6 +1074,12 @@
     function updateSportDropdown() {
       const sportDropdown = document.getElementById('sportDropdown');
       sportDropdown.innerHTML = '<option value="">Select sport...</option>';
+      // Add 'All Male Athletes' or 'All Female Athletes' option
+      if (currentGender === 'male') {
+        sportDropdown.innerHTML += '<option value="__all_male__">All Male Athletes</option>';
+      } else if (currentGender === 'female') {
+        sportDropdown.innerHTML += '<option value="__all_female__">All Female Athletes</option>';
+      }
       // Only show sports for selected athlete
       if (!selectedAthlete || !athleteInfo[selectedAthlete.user_id]) return;
       let sportsSet = new Set();
@@ -1116,7 +1122,7 @@
       document.getElementById('ratingDisplay').style.display = 'block';
       // If a sport is selected, recalculate ratings using only athletes who play that sport
       let sportAthletes = allRatings;
-      if (selectedSport) {
+      if (selectedSport && selectedSport !== '__all_male__' && selectedSport !== '__all_female__') {
         sportAthletes = allRatings.filter(a => {
           if (!athleteInfo[a.user_id]) return false;
           for (let i = 1; i <= 4; i++) {
@@ -1126,6 +1132,10 @@
           }
           return false;
         });
+      } else if (selectedSport === '__all_male__') {
+        sportAthletes = allRatings.filter(a => a.gender === 'male');
+      } else if (selectedSport === '__all_female__') {
+        sportAthletes = allRatings.filter(a => a.gender === 'female');
       }
       // Recalculate rating scales for this sport
       const gender = athlete.gender;
