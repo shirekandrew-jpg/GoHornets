@@ -45,9 +45,11 @@
     const TOKEN = '31606b711ce9ef5a7b7d887dcbe60c6601f6691d7d3b9bab3f0eeb0ab9db';
     let perchAthletes = [];
     let athleteInfo = {};
+    let teamsData = [];
     document.addEventListener('DOMContentLoaded', async () => {
       await loadPerchAthletes();
       loadAthleteInfo();
+      await loadTeams();
       renderTable();
     });
     async function loadPerchAthletes() {
@@ -76,21 +78,40 @@
     function saveAthleteInfo() {
       localStorage.setItem('athlete_info', JSON.stringify(athleteInfo));
     }
+    async function loadTeams() {
+      try {
+        const response = await fetch('teams.json');
+        if (!response.ok) throw new Error('Failed to load teams.json');
+        const data = await response.json();
+        teamsData = data.teams || [];
+      } catch (e) {
+        teamsData = [];
+      }
+    }
+    function getSportsForGender(gender) {
+      return teamsData.filter(t => t.gender.toLowerCase() === gender.toLowerCase()).map(t => t.sport);
+    }
     function renderTable() {
       const tbody = document.getElementById('athleteTableBody');
       tbody.innerHTML = '';
       perchAthletes.forEach(athlete => {
         const id = athlete.id;
         const info = athleteInfo[id] || {};
+        const gender = (athlete.gender || '').toLowerCase();
+        const sports = getSportsForGender(gender);
+        const sportOptions = sports.map(s => `<option value="${s}"${info.sport1===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions2 = sports.map(s => `<option value="${s}"${info.sport2===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions3 = sports.map(s => `<option value="${s}"${info.sport3===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions4 = sports.map(s => `<option value="${s}"${info.sport4===s?' selected':''}>${s}</option>`).join('');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${athlete.first_name} ${athlete.last_name}</td>
           <td><input type="email" value="${info.email || athlete.email || ''}" id="email-${id}"></td>
           <td><input type="text" value="${info.gradClass || ''}" id="gradClass-${id}" placeholder="YYYY"></td>
-          <td><input type="text" value="${info.sport1 || ''}" id="sport1-${id}" placeholder="Sport 1"></td>
-          <td><input type="text" value="${info.sport2 || ''}" id="sport2-${id}" placeholder="Sport 2"></td>
-          <td><input type="text" value="${info.sport3 || ''}" id="sport3-${id}" placeholder="Sport 3"></td>
-          <td><input type="text" value="${info.sport4 || ''}" id="sport4-${id}" placeholder="Sport 4"></td>
+          <td><select id="sport1-${id}">${sportOptions}</select></td>
+          <td><select id="sport2-${id}">${sportOptions2}</select></td>
+          <td><select id="sport3-${id}">${sportOptions3}</select></td>
+          <td><select id="sport4-${id}">${sportOptions4}</select></td>
         `;
         tbody.appendChild(tr);
       });
