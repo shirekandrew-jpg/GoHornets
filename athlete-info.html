@@ -89,7 +89,12 @@
       }
     }
     function getSportsForGender(gender) {
-      return teamsData.filter(t => t.gender.toLowerCase() === gender.toLowerCase()).map(t => t.sport);
+      let sports = teamsData.filter(t => t.gender === gender).map(t => t.sport);
+      if (sports.length === 0) {
+        // Fallback: show all sports if gender is missing or no match
+        sports = teamsData.map(t => t.sport);
+      }
+      return sports;
     }
     function renderTable() {
       const tbody = document.getElementById('athleteTableBody');
@@ -99,6 +104,7 @@
         const info = athleteInfo[id] || {};
         const gender = (athlete.gender || '').toLowerCase();
         const sports = getSportsForGender(gender);
+        console.log('Athlete:', athlete.first_name, athlete.last_name, 'Gender:', gender, 'Sports:', sports);
         const sportOptions = sports.map(s => `<option value="${s}"${info.sport1===s?' selected':''}>${s}</option>`).join('');
         const sportOptions2 = sports.map(s => `<option value="${s}"${info.sport2===s?' selected':''}>${s}</option>`).join('');
         const sportOptions3 = sports.map(s => `<option value="${s}"${info.sport3===s?' selected':''}>${s}</option>`).join('');
