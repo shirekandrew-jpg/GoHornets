@@ -1,87 +1,23 @@
 {
   "teams": [
-    {
-      "sport": "Football",
-      "gender": "male"
-    },
-      {
-      "sport": "Flag Football",
-      "gender": "female"
-    },
-      {
-      "sport": "Volleyball",
-      "gender": "Female"
-    },
-      {
-      "sport": "Boy's Cross Country",
-      "gender": "Male"
-    },
-      {
-      "sport": "Girl's Cross Country",
-      "gender": "Female"
-    },
-      {
-      "sport": "Wrestling",
-      "gender": "Male"
-    },
-      {
-      "sport": "Baseball",
-      "gender": "Male"
-    },
-    {
-      "sport": "Boy's Baseketball",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Baseketball",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Soccer",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Soccer",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Lax",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Lax",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Soccer",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Soccer",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Track & Field",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Track & Field",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Golf",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Golf",
-      "gender": "Female"
-    },
-    {
-      "sport": "Boy's Tennis",
-      "gender": "Male"
-    },
-    {
-      "sport": "Girl's Tennis",
-      "gender": "Female"
-    }
- 
+    { "sport": "Football", "gender": "male" },
+    { "sport": "Flag Football", "gender": "female" },
+    { "sport": "Volleyball", "gender": "female" },
+    { "sport": "Boy's Cross Country", "gender": "male" },
+    { "sport": "Girl's Cross Country", "gender": "female" },
+    { "sport": "Wrestling", "gender": "male" },
+    { "sport": "Baseball", "gender": "male" },
+    { "sport": "Boy's Basketball", "gender": "male" },
+    { "sport": "Girl's Basketball", "gender": "female" },
+    { "sport": "Boy's Soccer", "gender": "male" },
+    { "sport": "Girl's Soccer", "gender": "female" },
+    { "sport": "Boy's Lax", "gender": "male" },
+    { "sport": "Girl's Lax", "gender": "female" },
+    { "sport": "Boy's Track & Field", "gender": "male" },
+    { "sport": "Girl's Track & Field", "gender": "female" },
+    { "sport": "Boy's Golf", "gender": "male" },
+    { "sport": "Girl's Golf", "gender": "female" },
+    { "sport": "Boy's Tennis", "gender": "male" },
+    { "sport": "Girl's Tennis", "gender": "female" }
+  ]
+}
