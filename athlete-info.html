@@ -105,10 +105,11 @@
         const gender = (athlete.gender || '').toLowerCase();
         const sports = getSportsForGender(gender);
         console.log('Athlete:', athlete.first_name, athlete.last_name, 'Gender:', gender, 'Sports:', sports);
-        const sportOptions = sports.map(s => `<option value="${s}"${info.sport1===s?' selected':''}>${s}</option>`).join('');
-        const sportOptions2 = sports.map(s => `<option value="${s}"${info.sport2===s?' selected':''}>${s}</option>`).join('');
-        const sportOptions3 = sports.map(s => `<option value="${s}"${info.sport3===s?' selected':''}>${s}</option>`).join('');
-        const sportOptions4 = sports.map(s => `<option value="${s}"${info.sport4===s?' selected':''}>${s}</option>`).join('');
+        const emptyOption = `<option value="">-- No Sport --</option>`;
+        const sportOptions = emptyOption + sports.map(s => `<option value="${s}"${info.sport1===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions2 = emptyOption + sports.map(s => `<option value="${s}"${info.sport2===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions3 = emptyOption + sports.map(s => `<option value="${s}"${info.sport3===s?' selected':''}>${s}</option>`).join('');
+        const sportOptions4 = emptyOption + sports.map(s => `<option value="${s}"${info.sport4===s?' selected':''}>${s}</option>`).join('');
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${athlete.first_name} ${athlete.last_name}</td>
