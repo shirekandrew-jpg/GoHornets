@@ -2,11 +2,11 @@
   "teams": [
     {
       "sport": "Football",
-      "gender": "Male"
+      "gender": "male"
     },
       {
       "sport": "Flag Football",
-      "gender": "Female"
+      "gender": "female"
     },
       {
       "sport": "Volleyball",
